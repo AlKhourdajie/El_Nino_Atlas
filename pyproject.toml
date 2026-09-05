@@ -1,0 +1,32 @@
+[project]
+name = "el-nino-atlas"
+version = "0.1.0"
+description = "Open-source interactive tracker linking the 2026-27 El Niño to realised socioeconomic impacts: forecast, anticipatory action, realised impact."
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Alaa Al Khourdajie" }]
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "dash>=4.4.1",
+    "dash-bootstrap-components>=2.0.4",
+    "plotly>=7.0.0",
+    "pandas>=3.0.5",
+    "pyyaml>=6.0.3",
+    "gunicorn>=26.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.16.6",
+    "pytest>=9.1.1",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
