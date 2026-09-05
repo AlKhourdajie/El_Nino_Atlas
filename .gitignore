@@ -1,0 +1,19 @@
+# Data: fetched at run time, governed by src/sources.yaml
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# Environment
+.venv/
+.env
+.python-version.local
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: If you use this software, please cite it as below.
+title: El Niño Atlas
+type: software
+version: 0.1.0
+date-released: "2026-09-05"
+license: MIT
+repository-code: https://github.com/AlKhourdajie/El_Nino_Atlas
+abstract: >-
+  Open-source interactive tracker linking the 2026-27 El Niño to realised
+  socioeconomic impacts, structured as forecast, anticipatory action and
+  realised impact. Code is MIT; data licences are governed per source by
+  src/sources.yaml.
+authors:
+  - family-names: Al Khourdajie
+    given-names: Alaa
+    orcid: https://orcid.org/0000-0003-1376-7529
+    affiliation: Imperial College London
