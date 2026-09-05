@@ -1,0 +1,241 @@
+# Licence registry for the El Niño Atlas.
+#
+# This file gates all data work. No fetcher may exist for a source unless
+# its status here is `approved` or `conditional` (tests/test_sources_gate.py).
+# `excluded` sources are never reintroduced in any form. `link-only`
+# sources may be cited and linked from the tool but never fetched or
+# redistributed. `pending` sources are blocked until the licence check is
+# resolved and the status is changed here.
+#
+# Fields
+#   id             stable snake_case key; a fetcher module must use the same name
+#   name           human-readable dataset name
+#   publisher      responsible organisation
+#   url            canonical landing page (deep links are verified in notes)
+#   licence        licence as stated by the publisher, or "unverified"
+#   redistribution yes | conditional | no
+#   attribution    string to render wherever the data appears
+#   cadence        publication frequency
+#   status         approved | conditional | link-only | excluded | pending
+#   notes          caveats, verification tasks, decision rationale
+
+sources:
+  # ---------------------------------------------------------------- approved
+  - id: noaa_oni
+    name: Oceanic Niño Index (ONI)
+    publisher: NOAA Climate Prediction Center
+    url: https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php
+    licence: US Government work, public domain
+    redistribution: "yes"
+    attribution: "Source: NOAA Climate Prediction Center, Oceanic Niño Index (ONI)"
+    cadence: monthly
+    status: approved
+    notes: >-
+      Forecast-stage ENSO indicator. Public domain as a work of the US
+      federal government; snapshots may be committed under data/ once the
+      fetcher is implemented.
+
+  - id: worldbank_pink_sheet
+    name: Commodity Price Data (the Pink Sheet)
+    publisher: World Bank, Prospects Group
+    url: https://www.worldbank.org/en/research/commodity-markets
+    licence: CC BY 4.0
+    redistribution: "yes"
+    attribution: "Source: World Bank Commodity Price Data (the Pink Sheet), CC BY 4.0"
+    cadence: monthly
+    status: approved
+    notes: >-
+      Realised-impact stage, commodity prices. Supersedes IMF PCPS for this
+      tool. Direct workbook link to be confirmed when the fetcher is written.
+
+  - id: faostat
+    name: FAOSTAT
+    publisher: Food and Agriculture Organization of the United Nations (FAO)
+    url: https://www.fao.org/faostat/
+    licence: CC BY 4.0 (under the FAO database terms of use)
+    redistribution: "yes"
+    attribution: "Source: FAO, FAOSTAT, CC BY 4.0"
+    cadence: annual, with rolling domain updates
+    status: approved
+    notes: >-
+      Realised-impact stage, food production and prices. FAO applies CC BY
+      4.0 to FAOSTAT datasets under its database terms; confirm the exact
+      domain-level terms when a fetcher is written.
+
+  # ------------------------------------------------------------- conditional
+  - id: fews_net
+    name: FEWS NET food security outlooks and alerts
+    publisher: Famine Early Warning Systems Network (USAID)
+    url: https://fews.net/
+    licence: custom attribution policy
+    redistribution: "conditional"
+    attribution: "Source: FEWS NET"
+    cadence: monthly outlooks, ad hoc alerts
+    status: conditional
+    notes: >-
+      Anticipatory-action and realised-impact stages. Attribution required
+      under the FEWS NET terms; confirm wording before use. Funding
+      instability and reporting gaps during 2026 mean coverage may be
+      incomplete; gaps must render as "not assessed", never as "no alert".
+
+  - id: ocha_reliefweb
+    name: ReliefWeb
+    publisher: UN Office for the Coordination of Humanitarian Affairs (OCHA)
+    url: https://reliefweb.int/
+    licence: metadata and links reusable; partner content is third-party
+    redistribution: "conditional"
+    attribution: "Source: OCHA ReliefWeb"
+    cadence: continuous
+    status: conditional
+    notes: >-
+      Metadata and links only. Full-text partner content is third-party and
+      must not be stored or reproduced; link out instead.
+
+  - id: ocha_cerf_anticipatory_action
+    name: CERF anticipatory action activation reports
+    publisher: UN Central Emergency Response Fund (OCHA)
+    url: https://cerf.un.org/
+    licence: verify per document
+    redistribution: "conditional"
+    attribution: "Source: UN CERF anticipatory action framework documents"
+    cadence: per activation
+    status: conditional
+    notes: >-
+      Anticipatory-action stage. Each activation report carries its own
+      terms; verify before extracting figures. Record the document URL and
+      date alongside every value.
+
+  # --------------------------------------------------------------- link-only
+  - id: world_weather_attribution
+    name: World Weather Attribution studies
+    publisher: World Weather Attribution
+    url: https://www.worldweatherattribution.org/
+    licence: reported CC BY-NC-SA, unverified on the primary page
+    redistribution: "no"
+    attribution: "World Weather Attribution"
+    cadence: per event
+    status: link-only
+    notes: >-
+      Cite and link. The NC-SA terms, if confirmed, are incompatible with
+      redistribution from an MIT-licensed tool; no data is fetched.
+
+  - id: carbon_brief_attribution_map
+    name: Carbon Brief attribution map
+    publisher: Carbon Brief
+    url: https://www.carbonbrief.org/
+    licence: unverified
+    redistribution: "no"
+    attribution: "Carbon Brief"
+    cadence: rolling
+    status: link-only
+    notes: >-
+      Cite and link only until the licence is verified. Deep link to the
+      map article to be added once confirmed.
+
+  # ---------------------------------------------------------------- excluded
+  - id: emdat
+    name: EM-DAT International Disaster Database
+    publisher: CRED, UCLouvain
+    url: https://www.emdat.be/
+    licence: prohibits redistribution and derivative databases
+    redistribution: "no"
+    attribution: n/a
+    cadence: continuous
+    status: excluded
+    notes: >-
+      Informs the accompanying paper only. Never fetched, stored, derived
+      from, or referenced in this tool. tests/test_sources_gate.py fails on
+      any mention under src/ outside this file.
+
+  - id: munich_re_natcat
+    name: Munich Re NatCatSERVICE
+    publisher: Munich Re
+    url: https://www.munichre.com/
+    licence: proprietary
+    redistribution: "no"
+    attribution: n/a
+    cadence: annual
+    status: excluded
+    notes: Proprietary loss data; not used.
+
+  - id: swiss_re_natcat
+    name: Swiss Re Institute sigma natural catastrophe data
+    publisher: Swiss Re
+    url: https://www.swissre.com/
+    licence: proprietary
+    redistribution: "no"
+    attribution: n/a
+    cadence: annual
+    status: excluded
+    notes: Proprietary loss data; not used.
+
+  - id: imf_pcps
+    name: IMF Primary Commodity Price System (PCPS)
+    publisher: International Monetary Fund
+    url: https://www.imf.org/
+    licence: IMF terms of use
+    redistribution: "no"
+    attribution: n/a
+    cadence: monthly
+    status: excluded
+    notes: Superseded by the World Bank Pink Sheet for this tool.
+
+  # ----------------------------------------------------------------- pending
+  - id: idmc
+    name: IDMC Global Internal Displacement Database
+    publisher: Internal Displacement Monitoring Centre
+    url: https://www.internal-displacement.org/
+    licence: unverified
+    redistribution: "no"
+    attribution: "IDMC"
+    cadence: annual, with event-level updates
+    status: pending
+    notes: Licence check outstanding; realised-impact stage candidate (displacement).
+
+  - id: undrr_desinventar
+    name: DesInventar Sendai
+    publisher: UN Office for Disaster Risk Reduction (UNDRR)
+    url: https://www.desinventar.net/
+    licence: unverified
+    redistribution: "no"
+    attribution: "UNDRR DesInventar"
+    cadence: national, irregular
+    status: pending
+    notes: Licence check outstanding; national loss databases vary in terms.
+
+  - id: gdacs
+    name: Global Disaster Alert and Coordination System (GDACS)
+    publisher: European Commission JRC and OCHA
+    url: https://www.gdacs.org/
+    licence: unverified
+    redistribution: "no"
+    attribution: "GDACS"
+    cadence: continuous
+    status: pending
+    notes: Licence check outstanding; forecast and alert stage candidate.
+
+  - id: ifrc_go
+    name: IFRC GO platform
+    publisher: International Federation of Red Cross and Red Crescent Societies
+    url: https://go.ifrc.org/
+    licence: unverified
+    redistribution: "no"
+    attribution: "IFRC GO"
+    cadence: continuous
+    status: pending
+    notes: >-
+      Licence check outstanding; anticipatory-action stage candidate
+      (early action protocols and DREF activations).
+
+  - id: panama_canal_authority
+    name: Panama Canal Authority operational statistics
+    publisher: Autoridad del Canal de Panamá
+    url: https://pancanal.com/
+    licence: unverified
+    redistribution: "no"
+    attribution: "Panama Canal Authority"
+    cadence: monthly
+    status: pending
+    notes: >-
+      Licence check outstanding; realised-impact stage candidate (draught
+      restrictions and transits under drought).
