@@ -2,10 +2,12 @@
 #
 # This file gates all data work. No fetcher may exist for a source unless
 # its status here is `approved` or `conditional` (tests/test_sources_gate.py).
-# `excluded` sources are never reintroduced in any form. `link-only`
-# sources may be cited and linked from the tool but never fetched or
-# redistributed. `pending` sources are blocked until the licence check is
-# resolved and the status is changed here.
+# `excluded` sources are never reintroduced in any form. `superseded`
+# sources are editorial choices (a better source covers the same ground)
+# and behave as excluded for the fetcher gate. `link-only` sources may be
+# cited and linked from the tool but never fetched or redistributed.
+# `pending` sources are blocked until the licence check is resolved and
+# the status is changed here.
 #
 # Fields
 #   id             stable snake_case key; a fetcher module must use the same name
@@ -16,7 +18,8 @@
 #   redistribution yes | conditional | no
 #   attribution    string to render wherever the data appears
 #   cadence        publication frequency
-#   status         approved | conditional | link-only | excluded | pending
+#   status         approved | conditional | link-only | excluded | superseded | pending
+#   reason         one line of plain text stating why the status holds
 #   notes          caveats, verification tasks, decision rationale
 
 sources:
@@ -30,6 +33,7 @@ sources:
     attribution: "Source: NOAA Climate Prediction Center, Oceanic Niño Index (ONI)"
     cadence: monthly
     status: approved
+    reason: US federal government work in the public domain.
     notes: >-
       Forecast-stage ENSO indicator. Public domain as a work of the US
       federal government; snapshots may be committed under data/ once the
@@ -44,6 +48,7 @@ sources:
     attribution: "Source: World Bank Commodity Price Data (the Pink Sheet), CC BY 4.0"
     cadence: monthly
     status: approved
+    reason: Published under CC BY 4.0 with attribution required.
     notes: >-
       Realised-impact stage, commodity prices. Supersedes IMF PCPS for this
       tool. Direct workbook link to be confirmed when the fetcher is written.
@@ -57,6 +62,7 @@ sources:
     attribution: "Source: FAO, FAOSTAT, CC BY 4.0"
     cadence: annual, with rolling domain updates
     status: approved
+    reason: Published under CC BY 4.0 within the FAO database terms of use.
     notes: >-
       Realised-impact stage, food production and prices. FAO applies CC BY
       4.0 to FAOSTAT datasets under its database terms; confirm the exact
@@ -72,6 +78,7 @@ sources:
     attribution: "Source: FEWS NET"
     cadence: monthly outlooks, ad hoc alerts
     status: conditional
+    reason: Custom attribution policy plus 2026 reporting gaps require per-use checks.
     notes: >-
       Anticipatory-action and realised-impact stages. Attribution required
       under the FEWS NET terms; confirm wording before use. Funding
@@ -87,6 +94,7 @@ sources:
     attribution: "Source: OCHA ReliefWeb"
     cadence: continuous
     status: conditional
+    reason: Metadata and links are reusable; partner full text is third-party content.
     notes: >-
       Metadata and links only. Full-text partner content is third-party and
       must not be stored or reproduced; link out instead.
@@ -100,6 +108,7 @@ sources:
     attribution: "Source: UN CERF anticipatory action framework documents"
     cadence: per activation
     status: conditional
+    reason: Each activation report carries its own terms that must be verified per document.
     notes: >-
       Anticipatory-action stage. Each activation report carries its own
       terms; verify before extracting figures. Record the document URL and
@@ -115,6 +124,7 @@ sources:
     attribution: "World Weather Attribution"
     cadence: per event
     status: link-only
+    reason: Reported CC BY-NC-SA is unverified and would bar redistribution from an MIT tool.
     notes: >-
       Cite and link. The NC-SA terms, if confirmed, are incompatible with
       redistribution from an MIT-licensed tool; no data is fetched.
@@ -128,6 +138,7 @@ sources:
     attribution: "Carbon Brief"
     cadence: rolling
     status: link-only
+    reason: Licence unverified, so citation and linking only.
     notes: >-
       Cite and link only until the licence is verified. Deep link to the
       map article to be added once confirmed.
@@ -142,6 +153,7 @@ sources:
     attribution: n/a
     cadence: continuous
     status: excluded
+    reason: Terms prohibit redistribution and derivative databases.
     notes: >-
       Informs the accompanying paper only. Never fetched, stored, derived
       from, or referenced in this tool. tests/test_sources_gate.py fails on
@@ -156,6 +168,7 @@ sources:
     attribution: n/a
     cadence: annual
     status: excluded
+    reason: Proprietary loss data with no redistribution right.
     notes: Proprietary loss data; not used.
 
   - id: swiss_re_natcat
@@ -167,8 +180,10 @@ sources:
     attribution: n/a
     cadence: annual
     status: excluded
+    reason: Proprietary loss data with no redistribution right.
     notes: Proprietary loss data; not used.
 
+  # -------------------------------------------------------------- superseded
   - id: imf_pcps
     name: IMF Primary Commodity Price System (PCPS)
     publisher: International Monetary Fund
@@ -177,8 +192,9 @@ sources:
     redistribution: "no"
     attribution: n/a
     cadence: monthly
-    status: excluded
-    notes: Superseded by the World Bank Pink Sheet for this tool.
+    status: superseded
+    reason: duplicates World Bank Pink Sheet under more restrictive terms
+    notes: Editorial choice, not a licence bar; the Pink Sheet covers the same series.
 
   # ----------------------------------------------------------------- pending
   - id: idmc
@@ -190,6 +206,7 @@ sources:
     attribution: "IDMC"
     cadence: annual, with event-level updates
     status: pending
+    reason: Licence check outstanding.
     notes: Licence check outstanding; realised-impact stage candidate (displacement).
 
   - id: undrr_desinventar
@@ -201,6 +218,7 @@ sources:
     attribution: "UNDRR DesInventar"
     cadence: national, irregular
     status: pending
+    reason: Licence check outstanding; national databases vary in terms.
     notes: Licence check outstanding; national loss databases vary in terms.
 
   - id: gdacs
@@ -212,6 +230,7 @@ sources:
     attribution: "GDACS"
     cadence: continuous
     status: pending
+    reason: Licence check outstanding.
     notes: Licence check outstanding; forecast and alert stage candidate.
 
   - id: ifrc_go
@@ -223,6 +242,7 @@ sources:
     attribution: "IFRC GO"
     cadence: continuous
     status: pending
+    reason: Licence check outstanding.
     notes: >-
       Licence check outstanding; anticipatory-action stage candidate
       (early action protocols and DREF activations).
@@ -236,6 +256,7 @@ sources:
     attribution: "Panama Canal Authority"
     cadence: monthly
     status: pending
+    reason: Licence check outstanding.
     notes: >-
       Licence check outstanding; realised-impact stage candidate (draught
       restrictions and transits under drought).

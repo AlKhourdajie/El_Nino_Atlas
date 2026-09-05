@@ -1,4 +1,5 @@
-# Data: fetched at run time, governed by src/sources.yaml
+# Data: fetched at run time, governed by src/sources.yaml.
+# data/curated/ is human-curated and stays tracked.
 data/raw/*
 data/processed/*
 !data/raw/.gitkeep

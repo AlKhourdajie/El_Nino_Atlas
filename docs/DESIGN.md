@@ -34,7 +34,7 @@ if the two disagree, fix this table.
 | Realised impact | EM-DAT | `emdat` | excluded | no | never |
 | Realised impact | Munich Re NatCat | `munich_re_natcat` | excluded | no | never |
 | Realised impact | Swiss Re NatCat | `swiss_re_natcat` | excluded | no | never |
-| Realised impact | IMF PCPS | `imf_pcps` | excluded | no | never |
+| Realised impact | IMF PCPS | `imf_pcps` | superseded | no | never |
 | Realised impact | IDMC | `idmc` | pending | no | blocked |
 | Realised impact | UNDRR DesInventar | `undrr_desinventar` | pending | no | blocked |
 | Forecast | GDACS | `gdacs` | pending | no | blocked |
@@ -46,7 +46,10 @@ Status meanings:
 - **approved**: fetch, store and redistribute under the stated licence.
 - **conditional**: fetch only under the conditions in the registry notes.
 - **link-only**: cite and link; never fetch or store.
-- **excluded**: never used in any form; never reintroduced.
+- **excluded**: a licence or proprietary bar; never used in any form;
+  never reintroduced.
+- **superseded**: an editorial choice, not a licence bar; another source
+  covers the same ground. Behaves as excluded for the fetcher gate.
 - **pending**: blocked until the licence check is resolved in the registry.
 
 ## The three-state legend rule
@@ -67,6 +70,23 @@ uses a hatched, dashed-outline swatch so the distinction survives
 greyscale printing and colour-vision deficiency. A gate test asserts the
 colours differ. Coverage gaps in any source (for example FEWS NET
 reporting gaps during 2026) render as "not assessed".
+
+## Falsifiability
+
+The tracker reports the event as observed, including weak, null and
+negative outcomes. A forecast that does not verify, an activation whose
+trigger fired but whose hazard did not materialise, or a realised-impact
+layer that stays at "no alert" throughout are results, not failures of
+the tool.
+
+Divergence between the forecast, activation and realised-impact layers
+is itself content to display. Activations whose trigger fired but whose
+hazard did not verify are shown as such, alongside those that did.
+
+No layer selects, orders, thresholds or phrases content to confirm event
+severity. Where a choice of presentation would make the event look
+stronger or weaker, the choice is documented here and the same rule is
+applied whichever way the evidence falls.
 
 ## Caption guardrails
 
@@ -104,5 +124,7 @@ Figures are authored in degrees C.
 ## Deployment
 
 Local: `uv run python run.py dashboard`. Production: `gunicorn app:server`.
-`render.yaml.stub` documents the later one-step Render deployment; it is
-not active.
+`render.yaml` defines a Render web service (Python 3.11, uv-based build
+with a pip fallback, `gunicorn app:server`). Committing the file does not
+create the service; that is a deliberate manual step in the Render
+dashboard.

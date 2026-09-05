@@ -12,6 +12,13 @@ suggestions.
   form: no fetcher, no cached file, no derived table, no hard-coded
   values, no mention under `src/`. In particular, nothing from EM-DAT
   enters this tool; its analysis lives in the accompanying paper only.
+- `excluded` means a licence or proprietary bar. `superseded` means an
+  editorial choice: another source covers the same ground. Both bar a
+  fetcher. Every registry entry carries a one-line `reason` for its
+  status.
+- Files under `data/curated/` are human-curated. Never add, edit or
+  delete entries there unless explicitly instructed in-session, and
+  never invent entries.
 - No data file is committed unless its source entry says
   `redistribution: "yes"`. Everything else is fetched at run time into
   `data/raw/` or `data/processed/`, which are gitignored apart from
@@ -33,6 +40,9 @@ suggestions.
 
 - "Not assessed" always renders distinctly from "no alert" and never
   shares its colour. Tokens live in `src/theme.py`.
+- The tracker reports the event as observed, including weak, null and
+  negative outcomes; divergence between layers is content to display,
+  and no layer selects or phrases content to confirm event severity.
 - Figures are authored in degrees C.
 - Captions on growth, price transmission, and the 2023-24 temperature
   contribution follow the guardrails in `docs/DESIGN.md` verbatim or in

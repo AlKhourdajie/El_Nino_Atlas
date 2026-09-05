@@ -11,7 +11,14 @@ SRC = ROOT / "src"
 SOURCES_YAML = SRC / "sources.yaml"
 FETCHERS_DIR = SRC / "fetchers"
 
-VALID_STATUSES = {"approved", "conditional", "link-only", "excluded", "pending"}
+VALID_STATUSES = {
+    "approved",
+    "conditional",
+    "link-only",
+    "excluded",
+    "superseded",
+    "pending",
+}
 VALID_REDISTRIBUTION = {"yes", "conditional", "no"}
 REQUIRED_FIELDS = {
     "id",
@@ -23,9 +30,13 @@ REQUIRED_FIELDS = {
     "attribution",
     "cadence",
     "status",
+    "reason",
     "notes",
 }
 FETCHABLE_STATUSES = {"approved", "conditional"}
+# Superseded is an editorial choice, not a licence bar, but for the fetcher
+# gate it behaves exactly as excluded.
+NON_FETCHABLE_STATUSES = VALID_STATUSES - FETCHABLE_STATUSES
 EXCLUDED_NEEDLES = ("emdat", "em-dat")
 
 
@@ -48,6 +59,9 @@ def test_registry_schema(sources):
             f"{source_id}: bad redistribution"
         )
         assert entry["id"] == source_id
+        reason = entry["reason"]
+        assert isinstance(reason, str) and reason.strip(), f"{source_id}: empty reason"
+        assert "\n" not in reason.strip(), f"{source_id}: reason must be one line"
 
 
 def test_every_fetcher_has_fetchable_source(sources):
@@ -56,10 +70,18 @@ def test_every_fetcher_has_fetchable_source(sources):
     for module in modules:
         assert module in sources, f"fetcher {module} has no entry in sources.yaml"
         status = sources[module]["status"]
-        assert status in FETCHABLE_STATUSES, (
+        assert status not in NON_FETCHABLE_STATUSES, (
             f"fetcher {module} maps to status {status!r}; only "
             f"{sorted(FETCHABLE_STATUSES)} may have fetchers"
         )
+        assert status in FETCHABLE_STATUSES
+
+
+def test_superseded_and_excluded_have_no_fetcher(sources):
+    modules = {p.stem for p in FETCHERS_DIR.glob("*.py") if p.name != "__init__.py"}
+    barred = {sid for sid, e in sources.items() if e["status"] in {"excluded", "superseded"}}
+    assert barred, "expected at least one excluded or superseded entry"
+    assert not (modules & barred), f"fetchers exist for barred sources: {modules & barred}"
 
 
 def test_no_excluded_source_referenced_under_src():
@@ -82,5 +104,8 @@ def test_no_data_files_tracked_in_git():
         text=True,
         check=True,
     ).stdout.split()
-    offenders = [p for p in tracked if Path(p).name != ".gitkeep"]
+    # Human-curated files under data/curated/ are the one tracked exception.
+    offenders = [
+        p for p in tracked if Path(p).name != ".gitkeep" and not p.startswith("data/curated/")
+    ]
     assert not offenders, f"data files must not be committed: {offenders}"
