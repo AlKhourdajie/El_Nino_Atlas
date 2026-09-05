@@ -30,8 +30,25 @@ Host, port and debug mode are read from `ATLAS_HOST`, `ATLAS_PORT` (or
 - `src/layout.py`: page builders.
 - `src/layers/`, `src/fetchers/`: stub packages.
 - `src/sources.yaml`: the licence registry that gates all data work.
+- `data/curated/`: human-curated files, tracked in git; `data/raw/` and
+  `data/processed/` are fetched at run time and ignored.
+- `render.yaml`: Render web-service definition.
 - `docs/DESIGN.md`: scope, layer table, legend rule, caption guardrails.
 - `CLAUDE.md`: standing rules for every contributor and session.
+
+## Deployment
+
+Production serves the Flask object exposed by `app.py`:
+
+```bash
+uv run gunicorn app:server --bind 0.0.0.0:8050
+```
+
+`render.yaml` defines a Render web service on Python 3.11 that builds
+with uv (falling back to pip if uv is unavailable) and starts
+`gunicorn app:server`. Committing the file does not create the service;
+connect the repository in the Render dashboard when the tool is ready to
+go live.
 
 ## Licence
 

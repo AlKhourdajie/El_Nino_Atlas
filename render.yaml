@@ -1,0 +1,38 @@
+# Render Blueprint for the El Niño Atlas.
+#
+# Committing this file does not create a service. Connect the repository
+# in the Render dashboard to activate it.
+#
+# app.py builds the Dash app at import and exposes `server = app.server`,
+# so the start command is the standard `gunicorn app:server`.
+
+services:
+  - type: web
+    name: el-nino-atlas
+    runtime: python
+    plan: free
+    branch: main
+    autoDeploy: false
+    # Build with uv from the committed lock file; fall back to pip if uv
+    # cannot be installed on the build image.
+    buildCommand: >-
+      (pip install uv && uv sync --locked --no-dev)
+      || pip install
+      "dash>=4.4.1" "dash-bootstrap-components>=2.0.4" "plotly>=7.0.0"
+      "pandas>=3.0.5" "pyyaml>=6.0.3" "gunicorn>=26.2.0"
+      "requests>=2.34.2" "openpyxl>=3.1.5"
+    # Prefer the uv-managed environment; fall back to the system
+    # interpreter, where the pip path installed the packages.
+    startCommand: >-
+      if [ -x .venv/bin/gunicorn ]; then
+      .venv/bin/gunicorn app:server --bind 0.0.0.0:$PORT;
+      else
+      gunicorn app:server --bind 0.0.0.0:$PORT;
+      fi
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: ATLAS_DEBUG
+        value: "false"
+      # gunicorn binds to Render's $PORT; ATLAS_HOST/ATLAS_PORT are unused here.
