@@ -16,11 +16,7 @@ services:
     # Build with uv from the committed lock file; fall back to pip if uv
     # cannot be installed on the build image.
     buildCommand: >-
-      (pip install uv && uv sync --locked --no-dev)
-      || pip install
-      "dash>=4.4.1" "dash-bootstrap-components>=2.0.4" "plotly>=7.0.0"
-      "pandas>=3.0.5" "pyyaml>=6.0.3" "gunicorn>=26.2.0"
-      "requests>=2.34.2" "openpyxl>=3.1.5"
+      (pip install uv && uv sync --locked --no-dev) || pip install .
     # Prefer the uv-managed environment; fall back to the system
     # interpreter, where the pip path installed the packages.
     startCommand: >-
