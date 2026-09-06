@@ -17,6 +17,7 @@ uv run python run.py dashboard    # serve on http://127.0.0.1:8050
 uv run python run.py update       # run registered fetchers (none yet)
 uv run ruff check .
 uv run pytest
+uv run pre-commit install         # ruff plus the gate tests on every commit
 ```
 
 Host, port and debug mode are read from `ATLAS_HOST`, `ATLAS_PORT` (or
@@ -30,6 +31,9 @@ Host, port and debug mode are read from `ATLAS_HOST`, `ATLAS_PORT` (or
 - `src/layout.py`: page builders.
 - `src/layers/`, `src/fetchers/`: stub packages.
 - `src/sources.yaml`: the licence registry that gates all data work.
+- `src/schema.py`: the tidy long-format contract every layer emits.
+- `src/enso_events.py`: NOAA-convention ENSO event classification.
+- `data/curated/activations.yaml`: hand-curated anticipatory-action register.
 - `data/curated/`: human-curated files, tracked in git; `data/raw/` and
   `data/processed/` are fetched at run time and ignored.
 - `render.yaml`: Render web-service definition.

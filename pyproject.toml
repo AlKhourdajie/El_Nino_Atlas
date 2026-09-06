@@ -34,6 +34,7 @@ include = ["src", "app.py", "config.py", "run.py", "pyproject.toml", "README.md"
 dev = [
     "ruff>=0.16.6",
     "pytest>=9.1.1",
+    "pre-commit>=4.6.2",
 ]
 
 [tool.ruff]

@@ -1,0 +1,34 @@
+# Hand-curated register of anticipatory-action activations linked to the
+# 2026-27 El Niño. Human-curated: never add, edit or delete entries here
+# unless explicitly instructed in-session, and never invent entries.
+#
+# Fields (all required; use null where a value is genuinely unknown)
+#   date            ISO date the activation was announced or triggered
+#   region          UN M49 region or sub-region, or basin, as free text
+#   country         country name as used by the framework document
+#   framework       e.g. "CERF anticipatory action", "IFRC DREF early action"
+#   agencies        list of implementing agencies
+#   amount_usd      released or allocated amount in US dollars, or null
+#   people_covered  people targeted by the activation, or null
+#   trigger         the forecast or index threshold that fired
+#   source_url      publisher's own document for the activation
+#   retrieved_at    UTC ISO 8601 timestamp when the entry was checked
+#   example         optional; true marks an illustrative entry that the
+#                   validator tolerates and the app never renders
+#
+# The single entry below is an example of the shape only. It is not a
+# real activation.
+
+activations:
+  - example: true
+    date: 2026-01-01
+    region: Example region
+    country: Example country
+    framework: Example anticipatory-action framework
+    agencies:
+      - Example agency
+    amount_usd: null
+    people_covered: null
+    trigger: Example trigger; not a real activation
+    source_url: https://example.org/example-activation
+    retrieved_at: "2026-09-05T00:00:00Z"
