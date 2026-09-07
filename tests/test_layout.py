@@ -2,9 +2,25 @@
 
 from pathlib import Path
 
+import plotly.graph_objects as go
+from dash import dcc, html
+
+from src import layout, theme
 from src.layout import captions
+from src.layout.explainer import Explainer
+from tests.support import walk
 
 DESIGN = Path(__file__).resolve().parent.parent / "docs" / "DESIGN.md"
+EXPLAINER = Explainer(
+    title="Example panel",
+    what="What.",
+    how="How.",
+    why="Why.",
+    not_shown="Not shown.",
+    source_name="Example source",
+    source_url="https://example.org/source",
+    licence_label="CC BY 4.0",
+)
 
 
 def design_captions() -> list[str]:
@@ -31,3 +47,69 @@ def test_captions_are_verbatim_from_the_design_notes():
         captions.PRICE_TRANSMISSION,
         captions.TEMPERATURE_CONTRIBUTION,
     )
+
+
+def test_opening_line_is_verbatim():
+    assert layout.OPENING == (
+        "A very strong El Niño is under way in the tropical Pacific, on top of the warmest "
+        "global background on record. This atlas follows what was forecast, what was done "
+        "in anticipation, and what has happened."
+    )
+    header = layout.opening()
+    (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
+    assert lead.children == layout.OPENING
+
+
+def test_about_block_has_three_sentences():
+    assert len(layout.ABOUT) == 3
+    assert all(sentence.endswith(".") and sentence.count(". ") == 0 for sentence in layout.ABOUT)
+    text = " ".join(layout.ABOUT)
+    for phrase in (
+        "one climate event",
+        "forecast, anticipatory action and realised impact",
+        "finding",
+    ):
+        assert phrase in text
+    assert layout.about().id == "about"
+
+
+def test_panel_holds_stage_graph_and_explainer():
+    section = layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p")
+    assert section.id == "p"
+    assert next(c for c in walk(section) if isinstance(c, html.H2)).children == "Forecast"
+    assert len([c for c in walk(section) if isinstance(c, dcc.Graph)]) == 1
+    rendered = str(section)
+    assert "Example panel" in rendered
+    assert "retrieved 2026-09-05T17:00:00Z" in rendered
+    assert layout.UNAVAILABLE_NOTICE not in rendered
+
+
+def test_unavailable_panel_shows_notice_and_explainer():
+    section = layout.unavailable_panel("Forecast", EXPLAINER, id="p")
+    assert not [c for c in walk(section) if isinstance(c, dcc.Graph)]
+    (notice,) = [c for c in walk(section) if getattr(c, "role", None) == "status"]
+    assert notice.children == layout.UNAVAILABLE_NOTICE
+    assert theme.STATE_COLOURS["not_assessed"] in notice.style["border"]
+    rendered = str(section)
+    assert "Example panel" in rendered
+    assert "retrieved" not in rendered
+
+
+def test_container_is_empty_with_its_id():
+    empty = layout.container("panel-activations")
+    assert empty.id == "panel-activations" and not empty.children
+
+
+def test_footer_states_licences_and_citation():
+    footer = layout.footer()
+    assert footer.id == "footer"
+    rendered = str(footer)
+    assert "Code: MIT licence. Data: licence stated with each panel." in rendered
+    assert "Cite: " in rendered
+    (link,) = [c for c in walk(footer) if isinstance(c, html.A)]
+    assert link.href == link.children == "https://doi.org/10.5281/zenodo.22644790"
+
+
+def test_page_copy_follows_the_rules():
+    for text in (layout.OPENING, *layout.ABOUT, layout.LICENCE_LINE):
+        assert "—" not in text
