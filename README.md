@@ -10,6 +10,16 @@ An El Niño is under way in the tropical Pacific and is forecast to become very 
 
 The atlas is a research tool in development. Version 0.2.0 (September 2026) carries three panels and one draft map. The code is released under the MIT licence, and each data source is used under its own terms, listed below.
 
+## Screenshots
+
+The page at 1280 px wide in the light and dark schemes, and at 375 px wide in the light scheme. The full set at 375, 768 and 1280 px in both schemes is in `docs/screenshots/`.
+
+![The atlas at 1280 px wide, light scheme](docs/screenshots/1280-light.png)
+
+![The atlas at 1280 px wide, dark scheme](docs/screenshots/1280-dark.png)
+
+![The atlas at 375 px wide, light scheme](docs/screenshots/375-light.png)
+
 ## Why an event-resolved atlas
 
 Hazard catalogues, forecast dashboards and response dashboards each cover one stage of an event and keep their records apart. The atlas takes the 2026-27 El Niño as its unit and organises the three records around it, so that every entry is tied to this event with a stated basis and the stages sit on one page. Divergence between the stages is a finding in its own right, so a forecast that failed to verify, an activation whose hazard never arrived and a price that moved for another reason are recorded with the same care as a confirmed impact.
