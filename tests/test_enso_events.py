@@ -2,7 +2,7 @@
 
 The first group uses a synthetic ONI series that exercises the rule's
 edges. The second group runs against the NOAA fixture and is skipped
-until tests/fixtures/noaa_oni/oni.ascii.txt is committed.
+until tests/fixtures/noaa_oni/oni.ascii.txt and its parser both exist.
 """
 
 from dataclasses import FrozenInstanceError
@@ -206,7 +206,18 @@ def test_event_record_is_frozen():
         record.peak = 0.0
 
 
-@pytest.mark.skipif(not FIXTURE.exists(), reason="NOAA ONI fixture not yet committed")
+def _parser_available() -> bool:
+    try:
+        from src.fetchers.noaa_oni import parse_oni  # noqa: F401
+    except ImportError:
+        return False
+    return True
+
+
+@pytest.mark.skipif(
+    not FIXTURE.exists() or not _parser_available(),
+    reason="NOAA ONI fixture or parser not yet committed",
+)
 def test_known_events_from_fixture():
     from src.fetchers.noaa_oni import parse_oni
 
