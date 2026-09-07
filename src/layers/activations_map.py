@@ -300,10 +300,10 @@ def discrepancy_note(entry: dict) -> list:
     children: list = ["Companion documents differ. "]
     for i, item in enumerate(items):
         if i:
-            children.append("; ")
+            children.append(" ")
         children.append(f"{item['statement']}: {format_figure(item['value'])} (")
         children.append(html.A("source", href=item["source_url"], target="_blank"))
-        children.append(")")
+        children.append(").")
     return children
 
 
@@ -376,14 +376,14 @@ def explainer() -> Explainer:
             "different figures."
         ),
         how=(
-            "In the words of its own page, the Central Emergency Response Fund (CERF) "
-            '"provides funding for OCHA-facilitated anticipatory action pilots", where '
-            "OCHA is the UN Office for the Coordination of Humanitarian Affairs. The "
-            "pilots act on a predicted shock through anticipatory actions identified in "
-            "advance, on a trigger agreed before the season. Each entry on this map is "
-            "read from a document the framework published and quotes its figures with "
-            "the page or paragraph they come from. Source wording: "
-            f"{CERF_ANTICIPATORY_ACTION_URL}"
+            f"In the words of [its own page]({CERF_ANTICIPATORY_ACTION_URL}), the Central "
+            'Emergency Response Fund (CERF) "provides funding for OCHA-facilitated '
+            'anticipatory action pilots", where OCHA is the UN Office for the '
+            "Coordination of Humanitarian Affairs. The pilots act on a predicted shock "
+            "through anticipatory actions identified in advance, on a trigger agreed "
+            "before the season. Each entry on this map is read from a document the "
+            "framework published and quotes its figures with the page or paragraph they "
+            "come from."
         ),
         why=(
             "El Niño is forecast months before the rainfall it disturbs arrives or fails. "
@@ -397,7 +397,7 @@ def explainer() -> Explainer:
             "An activation records money released on a forecast trigger and says nothing "
             "about whether the hazard occurred. The map does not show whether the "
             "forecast verified, how the money was spent or what happened to the people "
-            "targeted. A country shown as not tracked has no entry in the register; a "
+            "targeted. A country shown as not tracked has no entry in the register. A "
             "framework or a hazard may still exist there. Amounts are as the source "
             "document states them, and where companion documents differ the table lists "
             "both figures."

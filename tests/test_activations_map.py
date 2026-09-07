@@ -95,9 +95,18 @@ def test_example_entry_never_renders():
     assert all(entry["id"] not in rendered for entry in examples)
 
 
-def test_register_without_real_entries_renders_no_rows():
-    rendered = str(build_table(load_activations(REGISTER_PATH)))
-    assert layer.NO_ENTRIES_TEXT in rendered
+def test_empty_register_renders_no_rows():
+    assert layer.NO_ENTRIES_TEXT in str(build_table([]))
+
+
+def test_register_entries_render_one_row_each_and_never_not_tracked():
+    register = load_activations(REGISTER_PATH)
+    rendered = str(build_table(register))
+    assert (layer.NO_ENTRIES_TEXT in rendered) == (not register)
+    fig = build_figure(register)
+    for entry in register:
+        assert f"activation-{entry['id']}" in rendered
+        assert state_of(fig, entry["iso3"]) != NOT_TRACKED
 
 
 def test_country_with_mixed_entries_renders_activated():
@@ -196,10 +205,12 @@ def test_explainer_contract():
     for agency in ("OCHA", "WFP", "FAO"):
         assert agency in ex.source_name
     assert ex.source_url.startswith("https://cerf.un.org")
-    assert layer.CERF_ANTICIPATORY_ACTION_URL in ex.how
+    assert f"]({layer.CERF_ANTICIPATORY_ACTION_URL})" in ex.how
+    assert ex.how.count("](http") == 1, "the how block carries exactly one link"
     assert "says nothing about whether the hazard occurred" in ex.not_shown
     for text in (ex.title, ex.what, ex.how, ex.why, ex.not_shown, ex.source_name):
         assert "—" not in text, "no em-dashes in public copy"
+        assert ";" not in text, "no semicolons in public copy"
 
 
 @pytest.mark.parametrize(
