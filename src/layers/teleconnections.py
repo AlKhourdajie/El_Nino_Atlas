@@ -9,19 +9,19 @@ dataset:        "Warm Episode Relationships", the typical-impacts schematic
                 June to August in the lower panel
 url:            https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml
 image:          https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/warm.gif
-asset:          assets/teleconnections/noaa_cpc_elnino_impacts_djf.jpg,
+asset:          assets/teleconnections/noaa_cpc_elnino_impacts.jpg,
                 byte-identical to the retrieved image (a JPEG despite the
                 .gif name), retrieved 2026-09-07T14:36:16Z; sha256 and the
                 full record in assets/teleconnections/PROVENANCE.md
-licence:        US Government work, public domain
+licence:        US Government work, public domain (LicenseRef-US-PD)
 redistribution: yes
-attribution:    "Schematic after NOAA Climate Prediction Center, El Niño
+attribution:    "Source: NOAA Climate Prediction Center, typical El Niño
                 temperature and precipitation patterns"
 cadence:        static; the page was last modified on 19 December 2005 and
                 the image file on 7 November 2012
 latency:        none, the schematic is fixed
-registry id:    none yet; src/sources.yaml has no entry for the schematic
-                (noaa_oni covers a different dataset)
+registry id:    noaa_cpc_enso_impacts_schematic (src/sources.yaml; status
+                approved, redistribution yes)
 
 Role in the atlas
 -----------------
@@ -57,9 +57,10 @@ import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import html
 
-from src.layout import panel
+from src.layout import section
 from src.layout.explainer import Explainer, render_explainer
 
+SOURCE_ID = "noaa_cpc_enso_impacts_schematic"
 SEASON = "DJF"
 BASIS = "NOAA CPC schematic, DJF"
 
@@ -69,15 +70,15 @@ IMAGE_URL = "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/
 LICENCE_LABEL = "US Government work, public domain"
 
 # The schematic as served on the page: Dash serves ``assets/`` at ``/assets/``.
-IMAGE_ASSET = "teleconnections/noaa_cpc_elnino_impacts_djf.jpg"
+IMAGE_ASSET = "teleconnections/noaa_cpc_elnino_impacts.jpg"
 IMAGE_URL_PATH = f"/assets/{IMAGE_ASSET}"
 IMAGE_SHA256 = "849985b5dfc4c951ea7206da135c16d7a4c313addf7f77b071d54c12104d26c5"
 IMAGE_RETRIEVED_AT = "2026-09-07T14:36:16Z"
 IMAGE_ALT = (
     "National Oceanic and Atmospheric Administration Climate Prediction Center schematic of "
-    "typical El Niño impacts: shaded areas where past El Niño events tended to bring wetter, "
-    "drier, warmer or cooler conditions, December to February in the upper panel and June to "
-    "August in the lower panel."
+    "typical El Niño impacts, December to February above and June to August below: shaded "
+    "areas where past El Niño events tended to bring wetter, drier, warmer or cooler "
+    "conditions."
 )
 IMAGE_STYLE: dict[str, str] = {
     "width": "100%",
@@ -85,10 +86,12 @@ IMAGE_STYLE: dict[str, str] = {
     "height": "auto",
     "display": "block",
 }
-PANEL_TITLE = "Teleconnections, December to February: draft schematic"
+PANEL_TITLE = "Where El Niño usually matters: draft schematic"
+# The id of the empty container ``app.build_page`` reserves for this layer.
+PANEL_ID = "panel-teleconnections"
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-IMAGE_FILE = ROOT / "assets" / "teleconnections" / "noaa_cpc_elnino_impacts_djf.jpg"
+IMAGE_FILE = ROOT / "assets" / "teleconnections" / "noaa_cpc_elnino_impacts.jpg"
 CURATED_PATH = (
     ROOT / "data" / "curated" / "teleconnections" / "teleconnections_djf_schematic.geojson"
 )
@@ -308,12 +311,12 @@ def explainer() -> Explainer:
     return Explainer(
         title="El Niño teleconnections, December to February (draft)",
         what=(
-            "Where El Niño has tended to shift rainfall and temperature in past December to "
-            "February seasons, on the schematic published by the National Oceanic and "
-            "Atmospheric Administration (NOAA) Climate Prediction Center and shown here as "
-            "retrieved. The upper panel gives December to February and the lower panel June to "
-            "August. Each shaded area marks a tendency towards wetter, drier, warmer or cooler "
-            "conditions than normal, or a combination of two."
+            "Where El Niño has tended to shift rainfall and temperature in past seasons, on the "
+            "schematic published by the National Oceanic and Atmospheric Administration (NOAA) "
+            "Climate Prediction Center and shown here as retrieved, with two panels: December "
+            "to February above and June to August below. Each shaded area marks a tendency "
+            "towards wetter, drier, warmer or cooler conditions than normal, or a combination "
+            "of two."
         ),
         how=(
             "Schematic by the NOAA Climate Prediction Center, whose page states that El Niño "
@@ -353,23 +356,27 @@ def explainer() -> Explainer:
 
 def build_image_panel(
     image_src: str = IMAGE_URL_PATH, retrieved_at: str | None = IMAGE_RETRIEVED_AT
-) -> dbc.Card:
-    """The draft layer as shown on the page: the schematic image, then its explainer.
+) -> html.Section:
+    """The draft layer as shown on the page: the schematic image beside its explainer.
 
+    One section in the page's panel shape: the heading carries the word
+    draft, the image fills its column and keeps its aspect ratio, and the
+    explainer sits beside it on wide screens and below it on narrow ones.
     ``image_src`` is the URL the app serves the asset from; the default is
     Dash's standard assets path, and ``app.get_asset_url(IMAGE_ASSET)``
-    gives the same file under any other prefix. The image fills the column
-    width and keeps its aspect ratio.
+    gives the same file under any other prefix.
     """
-    return panel(
-        PANEL_TITLE,
-        html.Img(
-            src=image_src,
-            alt=IMAGE_ALT,
-            style=IMAGE_STYLE,
-            className="mb-3",
-            id="teleconnections-image",
-        ),
-        render_explainer(explainer(), retrieved_at=retrieved_at),
-        id="teleconnections-panel",
+    image = html.Img(
+        src=image_src,
+        alt=IMAGE_ALT,
+        style=IMAGE_STYLE,
+        className="mb-3",
+        id="teleconnections-image",
     )
+    row = dbc.Row(
+        [
+            dbc.Col(image, xs=12, lg=7),
+            dbc.Col(render_explainer(explainer(), retrieved_at), xs=12, lg=5),
+        ]
+    )
+    return section(PANEL_TITLE, row, id=PANEL_ID)

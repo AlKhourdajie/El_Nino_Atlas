@@ -7,10 +7,12 @@ import json
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pytest
+from dash import html
 
 from src import theme
 from src.layers import teleconnections as tc
 from src.layout.explainer import BLOCKS, Explainer, render_explainer
+from tests.support import walk
 
 
 def square(lon0: float, lat0: float, size: float = 10.0) -> dict:
@@ -239,12 +241,19 @@ def test_not_shown_states_the_text_and_image_discrepancies():
     assert "south-western United States" in not_shown
 
 
+def test_copy_names_both_panels_of_the_image():
+    assert tc.PANEL_TITLE == "Where El Niño usually matters: draft schematic"
+    for text in (tc.explainer().what, tc.IMAGE_ALT):
+        assert "December to February above" in text
+        assert "June to August below" in text
+
+
 def test_image_panel_shows_the_schematic_with_its_explainer():
-    card = tc.build_image_panel()
-    assert isinstance(card, dbc.Card)
-    rendered = str(card)
+    panel = tc.build_image_panel()
+    assert isinstance(panel, html.Section)
+    rendered = str(panel)
     assert tc.IMAGE_ASSET in rendered
-    assert "/assets/teleconnections/noaa_cpc_elnino_impacts_djf.jpg" in rendered
+    assert "/assets/teleconnections/noaa_cpc_elnino_impacts.jpg" in rendered
     for _field, label in BLOCKS:
         assert label in rendered
     assert "draft" in tc.PANEL_TITLE.lower()
@@ -252,6 +261,16 @@ def test_image_panel_shows_the_schematic_with_its_explainer():
     assert tc.IMAGE_ALT in rendered
     assert tc.SOURCE_URL in rendered
     assert f"retrieved {tc.IMAGE_RETRIEVED_AT}" in rendered
+
+
+def test_image_panel_has_the_page_panel_shape():
+    panel = tc.build_image_panel()
+    assert panel.id == "panel-teleconnections"
+    assert next(c for c in walk(panel) if isinstance(c, html.H2)).children == tc.PANEL_TITLE
+    images = [c for c in walk(panel) if isinstance(c, html.Img)]
+    assert len(images) == 1 and images[0].alt == tc.IMAGE_ALT
+    columns = [c for c in walk(panel) if isinstance(c, dbc.Col)]
+    assert columns and all(column.xs == 12 for column in columns)
 
 
 def test_image_fills_the_column_and_keeps_its_ratio():
