@@ -2,33 +2,53 @@
 # 2026-27 El Niño. Human-curated: never add, edit or delete entries here
 # unless explicitly instructed in-session, and never invent entries.
 #
-# Fields (all required; use null where a value is genuinely unknown)
-#   date            ISO date the activation was announced or triggered
-#   region          UN M49 region or sub-region, or basin, as free text
-#   country         country name as used by the framework document
-#   framework       e.g. "CERF anticipatory action", "IFRC DREF early action"
-#   agencies        list of implementing agencies
-#   amount_usd      released or allocated amount in US dollars, or null
-#   people_covered  people targeted by the activation, or null
-#   trigger         the forecast or index threshold that fired
-#   source_url      publisher's own document for the activation
-#   retrieved_at    UTC ISO 8601 timestamp when the entry was checked
-#   example         optional; true marks an illustrative entry that the
-#                   validator tolerates and the app never renders
+# Fields (every key present; use null where the document gives no value)
+#   id               stable key, unique across the register; lower case
+#                    letters, digits, underscores and hyphens
+#   iso3             ISO 3166-1 alpha-3 code in upper case (pycountry)
+#   country          country name as used by the framework document
+#   framework        cerf_aa | wfp_aa | ifrc_dref | other
+#   status           activated | framework_no_activation
+#   activation_date  ISO date the activation was announced or triggered;
+#                    null when the status is framework_no_activation
+#   trigger          the forecast or index threshold that fired, or null
+#   forecast_source  the forecast product the trigger reads, or null
+#   amount_usd       amount released in US dollars, or null
+#   people_targeted  people targeted by the activation, or null
+#   sector           sector or sectors funded, or null
+#   source_url       publisher's own document for the entry
+#   wayback_url      Internet Archive copy of source_url, or null
+#   retrieved        UTC ISO 8601 timestamp when the entry was checked
+#   discrepancies    list, possibly empty; each item has statement, value
+#                    and source_url and records a figure that a companion
+#                    document states differently; never reconciled
+#   example          optional; true marks an illustrative entry that the
+#                    validator tolerates and the app never renders
+#
+# A framework_no_activation entry carries no activation figures:
+# activation_date, amount_usd and people_targeted are null.
 #
 # The single entry below is an example of the shape only. It is not a
-# real activation.
+# real activation. iso3 must be a real code, so the example borrows
+# Antarctica, where no anticipatory-action framework exists.
 
 activations:
   - example: true
-    date: 2026-01-01
-    region: Example region
+    id: example_entry
+    iso3: ATA
     country: Example country
-    framework: Example anticipatory-action framework
-    agencies:
-      - Example agency
-    amount_usd: null
-    people_covered: null
+    framework: other
+    status: activated
+    activation_date: 2026-01-01
     trigger: Example trigger; not a real activation
+    forecast_source: Example forecast source
+    amount_usd: null
+    people_targeted: null
+    sector: null
     source_url: https://example.org/example-activation
-    retrieved_at: "2026-09-05T00:00:00Z"
+    wayback_url: null
+    retrieved: "2026-09-05T00:00:00Z"
+    discrepancies:
+      - statement: Example statement; a companion document gives a different figure
+        value: 0
+        source_url: https://example.org/example-companion-document
