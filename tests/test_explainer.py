@@ -1,10 +1,12 @@
 """Tests for the panel explainer contract in src/layout/explainer.py."""
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 
 import pytest
+from dash import html
 
 from src.layout.explainer import Explainer, render_explainer
+from tests.support import walk
 
 LABELS = (
     "What this shows",
@@ -56,3 +58,19 @@ def test_captions_default_to_empty_and_record_is_frozen():
     assert explainer.captions == ()
     with pytest.raises(FrozenInstanceError):
         explainer.title = "changed"
+
+
+def test_link_in_a_block_renders_as_an_anchor():
+    linked = replace(example(), how="Defined on the [CPC page](https://example.org/roni) in full.")
+    card = render_explainer(linked)
+    anchors = [c for c in walk(card) if isinstance(c, html.A)]
+    (link,) = [a for a in anchors if a.href == "https://example.org/roni"]
+    assert link.children == "CPC page"
+    how = next(c for c in walk(card) if isinstance(c, html.P) and link in c.children)
+    assert how.children == ["Defined on the ", link, " in full."]
+    assert "](" not in str(card)
+
+
+def test_blocks_without_links_render_as_plain_text():
+    card = render_explainer(example())
+    assert not [c for c in walk(card) if isinstance(c, html.A) and c.href != SOURCE_URL]

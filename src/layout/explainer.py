@@ -5,10 +5,15 @@ Explainer``. ``render_explainer`` turns the record into one card with
 four labelled blocks, a source line and the panel's captions, so every
 panel explains itself in the same shape. The copy rules for the text
 live in CLAUDE.md.
+
+A block is plain text. It may carry one link written ``[label](url)``,
+which ``render_explainer`` renders as an anchor; the copy rules reserve
+that for the "how" block, which links the source's own description.
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 import dash_bootstrap_components as dbc
@@ -20,6 +25,22 @@ BLOCKS: tuple[tuple[str, str], ...] = (
     ("why", "Why it matters for El Niño"),
     ("not_shown", "What it does not show"),
 )
+
+_LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
+
+
+def _with_links(text: str) -> list:
+    """``text`` split into strings and anchors, one anchor per ``[label](url)``."""
+    parts: list = []
+    last = 0
+    for match in _LINK_RE.finditer(text):
+        if match.start() > last:
+            parts.append(text[last : match.start()])
+        parts.append(html.A(match.group(1), href=match.group(2)))
+        last = match.end()
+    if last < len(text):
+        parts.append(text[last:])
+    return parts
 
 
 @dataclass(frozen=True)
@@ -48,7 +69,7 @@ def render_explainer(explainer: Explainer, retrieved_at: str | None = None) -> d
     for position, (field, label) in enumerate(BLOCKS):
         heading_class = "h6 mb-1" if position == 0 else "h6 mt-3 mb-1"
         body.append(html.H3(label, className=heading_class))
-        body.append(html.P(getattr(explainer, field), className="mb-0"))
+        body.append(html.P(_with_links(getattr(explainer, field)), className="mb-0"))
 
     source: list = [
         "Source: ",

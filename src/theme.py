@@ -7,6 +7,13 @@ or ``not_assessed``. The last is the absence of an assessment, not a
 finding of "nothing happening", so it must never share a colour with
 ``no_alert``. ``STATE_COLOURS`` is the single place where those colours
 live; ``tests/test_app_smoke.py`` asserts the two remain distinct.
+
+ENSO phase shading
+------------------
+Time-series panels shade El Niño and La Niña seasons behind their lines.
+A shaded season is a classification of the index, not an alert, so
+``PHASE_COLOURS`` stays distinct from every state token
+(``tests/test_enso_index.py`` asserts this).
 """
 
 import plotly.graph_objects as go
@@ -59,10 +66,30 @@ LIGHT = {
 # Ordered categorical sequence for non-state series.
 SERIES = ["#3A7CA5", "#D1495B", "#EDAE49", "#5E8C61", "#7B6D8D", "#8C4A2F"]
 
+# ENSO phase shading: warm for El Niño, cool and lighter for La Niña.
+PHASE_COLOURS: dict[str, str] = {
+    "el_nino": "#E8823F",
+    "la_nina": "#5FA8D3",
+}
+PHASE_OPACITY: dict[str, float] = {"el_nino": 0.22, "la_nina": 0.12}
+PHASE_LABELS: dict[str, str] = {"el_nino": "El Niño season", "la_nina": "La Niña season"}
+
+# Reference lines and secondary series sit back from the primary line.
+MUTED_LINE = "#9A948A"
+INDEX_LINE_COLOURS: dict[str, str] = {"primary": SERIES[0], "secondary": MUTED_LINE}
+THRESHOLD_LINE: dict[str, str | float] = {"color": MUTED_LINE, "width": 1, "dash": "dot"}
+
 FONT_FAMILY = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 TEMPLATE_DARK = "atlas_dark"
 TEMPLATE_LIGHT = "atlas_light"
+
+
+def rgba(hex_colour: str, alpha: float) -> str:
+    """``#RRGGBB`` as a CSS ``rgba(...)`` string with ``alpha`` between 0 and 1."""
+    value = hex_colour.lstrip("#")
+    red, green, blue = (int(value[i : i + 2], 16) for i in (0, 2, 4))
+    return f"rgba({red},{green},{blue},{alpha})"
 
 
 def _make_template(palette: dict[str, str]) -> go.layout.Template:
