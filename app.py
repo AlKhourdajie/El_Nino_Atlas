@@ -4,13 +4,14 @@ The app is built at import time so that ``gunicorn app:server`` works
 unchanged; ``run.py`` imports the same object for local serving.
 
 ``build_page`` assembles the page along the forecast, action, impact
-spine: the opening line, the About block, the index panel, the
-activations container, the commodity panel, the teleconnections
-container and the footer. Each panel reads its snapshot through
-``src.data_access``. A missing snapshot, the ``FileNotFoundError`` that
-``load_frame`` raises, renders the panel's explainer with a visible
-notice; every other error propagates. The commodity panel needs both
-snapshots, because its shading comes from the index events.
+spine: the opening line with the latest-reading line beneath it, the
+About block, the index panel, the activations container, the commodity
+panel, the teleconnections container and the footer. Each panel reads
+its snapshot through ``src.data_access``. A missing snapshot, the
+``FileNotFoundError`` that ``load_frame`` raises, renders the panel's
+explainer with a visible notice and omits the latest-reading line; every
+other error propagates. The commodity panel needs both snapshots,
+because its shading comes from the index events.
 """
 
 import dash
@@ -20,7 +21,7 @@ from src import data_access, layout, theme
 from src.enso_events import Event, enso_event_records
 from src.layers import commodities, enso_index
 
-FORECAST = "Forecast"
+EVENT = "The event"
 REALISED_IMPACT = "Realised impact"
 
 
@@ -36,10 +37,10 @@ def _snapshot(source_id: str) -> tuple | None:
 def _index_panel(snapshot: tuple | None, events: list[Event] | None) -> object:
     explainer = enso_index.explainer()
     if snapshot is None:
-        return layout.unavailable_panel(FORECAST, explainer, id="panel-index")
+        return layout.unavailable_panel(EVENT, explainer, id="panel-index")
     frame, metadata = snapshot
     figure = enso_index.build_figure(frame, events)
-    return layout.panel(FORECAST, explainer, figure, metadata["retrieved_at"], id="panel-index")
+    return layout.panel(EVENT, explainer, figure, metadata["retrieved_at"], id="panel-index")
 
 
 def _commodity_panel(snapshot: tuple | None, events: list[Event] | None) -> object:
@@ -57,12 +58,14 @@ def build_page() -> dbc.Container:
     """The page, from whichever snapshots exist at the time of the call."""
     index = _snapshot(enso_index.SOURCE_ID)
     events = None
+    reading = None
     if index is not None:
         frame = index[0]
         events = enso_event_records(frame[frame["series_id"] == enso_index.PRIMARY_SERIES])
+        reading = enso_index.latest_reading(frame, events)
     prices = _snapshot(commodities.SOURCE_ID)
     return layout.page(
-        layout.opening(),
+        layout.opening(reading),
         layout.about(),
         _index_panel(index, events),
         layout.container("panel-activations"),

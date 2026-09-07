@@ -9,7 +9,7 @@ from dash import dcc, html
 from src import layout, theme
 from src.layout import captions
 from src.layout.explainer import Explainer
-from tests.support import walk
+from tests.support import component_ids, walk
 
 DESIGN = Path(__file__).resolve().parent.parent / "docs" / "DESIGN.md"
 EXPLAINER = Explainer(
@@ -50,15 +50,29 @@ def test_captions_are_verbatim_from_the_design_notes():
     )
 
 
+READING = (
+    "Latest three-month season (June to August 2026): RONI +1.36 °C, ONI +1.80 °C, provisional."
+)
+
+
 def test_opening_line_is_verbatim():
     assert layout.OPENING == (
-        "A very strong El Niño is under way in the tropical Pacific, on top of the warmest "
-        "global background on record. This atlas follows what was forecast, what was done "
-        "in anticipation, and what has happened."
+        "An El Niño is under way in the tropical Pacific and is forecast to become very strong "
+        "by late 2026, on top of the warmest global background on record. This atlas follows "
+        "what was forecast, what was done in anticipation, and what has happened."
     )
     header = layout.opening()
     (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
     assert lead.children == layout.OPENING
+    assert component_ids(header) == ["header", "opening"]
+
+
+def test_opening_carries_the_reading_line_directly_beneath_the_lead():
+    header = layout.opening(READING)
+    assert component_ids(header) == ["header", "opening", "latest-reading"]
+    (line,) = [c for c in walk(header) if getattr(c, "id", None) == "latest-reading"]
+    assert isinstance(line, html.P) and line.children == READING
+    assert "latest-reading" not in component_ids(layout.opening(None))
 
 
 def test_about_block_has_three_sentences():

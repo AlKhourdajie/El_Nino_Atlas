@@ -164,8 +164,13 @@ def test_explainer_contract():
     assert "RONI" in explainer.title and "ONI" in explainer.title
     assert "RONI" in explainer.what and "ONI" in explainer.what
     assert "shading" in explainer.what.lower()
-    assert "minus the average anomaly of the global tropics" in explainer.how
+    assert "minus the average anomaly of the global tropics, 20°N to 20°S," in explainer.how
     assert "five consecutive overlapping three-month seasons" in explainer.how
+    assert (
+        "The atlas applies the rule to the one-decimal values that CPC publishes, which is "
+        "how CPC's own episode tables are built."
+    ) in explainer.how
+    assert explainer.how.index("Climate Prediction Center (CPC)") < explainer.how.index("CPC ")
     assert explainer.how.count("](") == 1
     assert f"({enso_index.RONI_URL})" in explainer.how
     assert "neither a weekly value nor an impact" in explainer.not_shown
@@ -193,3 +198,60 @@ def test_public_copy_follows_the_rules():
     ):
         assert "—" not in text
         assert " very " not in text
+
+
+@pytest.mark.parametrize(
+    ("centre", "expected"),
+    [
+        ("2026-07-01", "June to August 2026"),
+        (date(2026, 2, 1), "January to March 2026"),
+        ("2026-11-01", "October to December 2026"),
+        ("2026-12-01", "November 2026 to January 2027"),
+        ("2027-01-01", "December 2026 to February 2027"),
+    ],
+)
+def test_season_span_names_the_months_and_both_years_across_a_boundary(centre, expected):
+    assert enso_index.season_span(centre) == expected
+
+
+def test_latest_reading_names_the_season_and_both_values(frame, events):
+    # The synthetic run FMA to JJA 2026 has five seasons, so it is not provisional.
+    assert enso_index.latest_reading(frame, events) == (
+        "Latest three-month season (June to August 2026): RONI +1.20 °C, ONI +1.40 °C."
+    )
+
+
+def test_latest_reading_marks_a_provisional_run():
+    values = index_values()
+    for i in range(434, 436):  # shorten the last run to AMJ, MJJ and JJA 2026
+        values["RONI"][i] = 0.1
+    values["RONI"][-1] = 1.36
+    values["ONI"][-1] = 1.8
+    frame = index_frame(values)
+    events = enso_event_records(frame[frame["series_id"] == "RONI"])
+    assert events[-1].provisional and events[-1].end is None
+    assert enso_index.latest_reading(frame, events) == (
+        "Latest three-month season (June to August 2026): RONI +1.36 °C, ONI +1.80 °C, provisional."
+    )
+
+
+def test_latest_reading_shows_the_sign_and_both_years_across_a_boundary():
+    values = {"RONI": [-0.5] * 12 + [-0.76], "ONI": [-0.6] * 12 + [-0.4]}
+    frame = index_frame(values, start="2026-01-01")
+    events = enso_event_records(frame[frame["series_id"] == "RONI"])
+    assert not events[-1].provisional and events[-1].end is None
+    assert enso_index.latest_reading(frame, events) == (
+        "Latest three-month season (December 2026 to February 2027): RONI -0.76 °C, ONI -0.40 °C."
+    )
+
+
+def test_latest_reading_without_an_oni_value_for_the_season(frame, events):
+    without_last_oni = frame[~((frame["series_id"] == "ONI") & (frame["date"] == LAST_SEASON))]
+    assert enso_index.latest_reading(without_last_oni, events) == (
+        "Latest three-month season (June to August 2026): RONI +1.20 °C, ONI not assessed."
+    )
+
+
+def test_latest_reading_requires_both_series(frame):
+    with pytest.raises(ValueError, match="no rows with series_id 'ONI'"):
+        enso_index.latest_reading(frame[frame["series_id"] != "ONI"], [])

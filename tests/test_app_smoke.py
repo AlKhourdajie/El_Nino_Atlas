@@ -62,6 +62,22 @@ def graphs(page) -> list:
     return [c for c in walk(page) if isinstance(c, dcc.Graph)]
 
 
+def headings(page) -> list[str]:
+    """The section headings in page order."""
+    return [c.children for c in walk(page) if isinstance(c, html.H2)]
+
+
+def reading_line(page) -> html.P | None:
+    lines = [c for c in walk(page) if getattr(c, "id", None) == "latest-reading"]
+    assert len(lines) <= 1
+    return lines[0] if lines else None
+
+
+# The reading the synthetic index frame yields: the last run FMA to JJA 2026 has
+# five seasons, so it is not provisional.
+READING = "Latest three-month season (June to August 2026): RONI +1.20 °C, ONI +1.40 °C."
+
+
 def test_app_imports_and_layout_builds():
     import app as app_module
 
@@ -83,6 +99,10 @@ def test_page_with_both_snapshots(monkeypatch):
     assert layout.UNAVAILABLE_NOTICE not in rendered
     assert rendered.count(f"retrieved {RETRIEVED_AT}") == 2
     assert len(graphs(page)) == 2
+    assert headings(page) == ["About", "The event", "Realised impact"]
+    assert reading_line(page).children == READING
+    ids = component_ids(page)
+    assert ids.index("latest-reading") == ids.index("opening") + 1
     for id in ("panel-activations", "panel-teleconnections"):
         (empty,) = [c for c in walk(page) if getattr(c, "id", None) == id]
         assert isinstance(empty, html.Div) and not empty.children
@@ -104,6 +124,9 @@ def test_page_without_snapshots(monkeypatch):
     ):
         assert title in rendered
     assert layout.OPENING in rendered
+    assert headings(page) == ["About", "The event", "Realised impact"]
+    assert reading_line(page) is None
+    assert "Latest three-month season" not in rendered
 
 
 def test_commodity_panel_waits_for_the_index_snapshot(monkeypatch):
@@ -113,6 +136,7 @@ def test_commodity_panel_waits_for_the_index_snapshot(monkeypatch):
     page = app_module.build_page()
     assert str(page).count(layout.UNAVAILABLE_NOTICE) == 2
     assert not graphs(page)
+    assert reading_line(page) is None
 
 
 def test_index_panel_renders_without_the_price_snapshot(monkeypatch):
@@ -122,6 +146,7 @@ def test_index_panel_renders_without_the_price_snapshot(monkeypatch):
     page = app_module.build_page()
     assert str(page).count(layout.UNAVAILABLE_NOTICE) == 1
     assert len(graphs(page)) == 1
+    assert reading_line(page).children == READING
 
 
 def test_page_renders_on_narrow_screens(monkeypatch):

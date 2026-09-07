@@ -15,6 +15,11 @@ the last month of its last season. An event whose ``end`` is ``None`` is
 shaded to the end of the last season in the frame. A provisional event
 has a dashed outline and the label "provisional". ``add_event_shading``
 is shared with the commodity panel.
+
+``latest_reading`` builds the one-line summary of the latest season that
+the page shows beneath its opening line: the season's months, the RONI
+and ONI values with their signs, and the word provisional while the RONI
+run that reaches that season is shorter than five seasons.
 """
 
 from __future__ import annotations
@@ -69,13 +74,32 @@ WHAT = (
 )
 
 HOW = (
-    "The Climate Prediction Center defines RONI as the Niño 3.4 sea surface "
-    "temperature anomaly minus the average anomaly of the global tropics, rescaled "
-    "to the traditional index. Both indices are three-month running means in "
+    "The Climate Prediction Center (CPC) defines RONI as the Niño 3.4 sea surface "
+    "temperature anomaly minus the average anomaly of the global tropics, 20°N to 20°S, "
+    "rescaled to the traditional index. Both indices are three-month running means in "
     "degrees C, and the same rule applies to both: El Niño or La Niña conditions "
     "are identified when the index is at or beyond plus or minus 0.5 °C for five "
-    "consecutive overlapping three-month seasons. The definition is set out in the "
+    "consecutive overlapping three-month seasons. The atlas applies the rule to the "
+    "one-decimal values that CPC publishes, which is how CPC's own episode tables are "
+    "built. The definition is set out in the "
     f"[CPC RONI announcement]({RONI_URL})."
+)
+
+READING_PREFIX = "Latest three-month season"
+NOT_ASSESSED_TEXT = "not assessed"
+MONTHS: tuple[str, ...] = (
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
 )
 
 WHY = (
@@ -126,6 +150,54 @@ def _series(frame: pd.DataFrame, series_id: str) -> pd.DataFrame:
     if units != [UNIT]:
         raise ValueError(f"series {series_id!r} must be in {UNIT!r}, got {units}")
     return rows.sort_values("date").reset_index(drop=True)
+
+
+def _shift(centre: date, months: int) -> tuple[int, int]:
+    """The (year, month) that lies ``months`` after ``centre``; ``months`` may be negative."""
+    year, month_index = divmod(centre.year * 12 + centre.month - 1 + months, 12)
+    return year, month_index + 1
+
+
+def season_span(centre: date | str) -> str:
+    """The months of the season centred on ``centre``, e.g. 'June to August 2026'.
+
+    ``centre`` is a ``date`` or the ISO string of the centre month. A
+    season that crosses a year boundary names both years, as in
+    'December 2026 to February 2027'.
+    """
+    if isinstance(centre, str):
+        centre = date.fromisoformat(centre)
+    start_year, start_month = _shift(centre, -1)
+    end_year, end_month = _shift(centre, 1)
+    if start_year == end_year:
+        return f"{MONTHS[start_month - 1]} to {MONTHS[end_month - 1]} {end_year}"
+    return f"{MONTHS[start_month - 1]} {start_year} to {MONTHS[end_month - 1]} {end_year}"
+
+
+def latest_reading(frame: pd.DataFrame, events: Iterable[Event]) -> str:
+    """One line on the latest season, shown beneath the page's opening line.
+
+    'Latest three-month season (June to August 2026): RONI +1.36 °C,
+    ONI +1.80 °C, provisional.' The season is the last one in the RONI
+    series. The ONI value is the one for the same season, or "not
+    assessed" when the ONI series has none. ``events`` are the RONI
+    event records; the word provisional appears when the run that
+    reaches the latest season is still shorter than five seasons, so
+    its classification can change.
+    """
+    validate_frame(frame)
+    primary = _series(frame, PRIMARY_SERIES)
+    secondary = _series(frame, SECONDARY_SERIES)
+    last = primary.iloc[-1]
+    readings = [f"{PRIMARY_SERIES} {last['value']:+.2f} °C"]
+    match = secondary.loc[secondary["date"] == last["date"], "value"]
+    if match.empty:
+        readings.append(f"{SECONDARY_SERIES} {NOT_ASSESSED_TEXT}")
+    else:
+        readings.append(f"{SECONDARY_SERIES} {match.iloc[0]:+.2f} °C")
+    if any(event.end is None and event.provisional for event in events):
+        readings.append("provisional")
+    return f"{READING_PREFIX} ({season_span(last['date'])}): {', '.join(readings)}."
 
 
 def _line(rows: pd.DataFrame, name: str, colour: str, width: float, rank: int) -> go.Scatter:

@@ -18,9 +18,9 @@ from src.layout.explainer import Explainer, render_explainer
 TITLE = "El Niño Atlas"
 
 OPENING = (
-    "A very strong El Niño is under way in the tropical Pacific, on top of the warmest "
-    "global background on record. This atlas follows what was forecast, what was done "
-    "in anticipation, and what has happened."
+    "An El Niño is under way in the tropical Pacific and is forecast to become very strong "
+    "by late 2026, on top of the warmest global background on record. This atlas follows "
+    "what was forecast, what was done in anticipation, and what has happened."
 )
 
 ABOUT: tuple[str, ...] = (
@@ -47,12 +47,20 @@ def section(title: str, *children, id: str | None = None) -> html.Section:
     return html.Section([html.H2(title, className="h5 mt-4 mb-2"), *children], **kwargs)
 
 
-def opening() -> html.Header:
-    """The page title and the opening line."""
-    return html.Header(
-        [html.H1(TITLE, className="mt-4"), html.P(OPENING, className="lead", id="opening")],
-        id="header",
-    )
+def opening(reading: str | None = None) -> html.Header:
+    """The page title, the opening line and, when given, the latest-reading line.
+
+    ``reading`` is the one-line summary of the latest season that
+    ``src.layers.enso_index.latest_reading`` builds. It is ``None`` when
+    no index snapshot exists, and the line is then omitted.
+    """
+    children: list = [
+        html.H1(TITLE, className="mt-4"),
+        html.P(OPENING, className="lead", id="opening"),
+    ]
+    if reading is not None:
+        children.append(html.P(reading, id="latest-reading"))
+    return html.Header(children, id="header")
 
 
 def about() -> html.Section:
