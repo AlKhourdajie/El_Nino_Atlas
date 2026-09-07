@@ -4,6 +4,7 @@ from pathlib import Path
 
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+import yaml
 from dash import dcc, html
 
 from src import layout, theme
@@ -11,8 +12,10 @@ from src.layout import captions
 from src.layout.explainer import Explainer
 from tests.support import component_ids, walk
 
-DESIGN = Path(__file__).resolve().parent.parent / "docs" / "DESIGN.md"
-README = Path(__file__).resolve().parent.parent / "README.md"
+ROOT = Path(__file__).resolve().parent.parent
+DESIGN = ROOT / "docs" / "DESIGN.md"
+README = ROOT / "README.md"
+CITATION = ROOT / "CITATION.cff"
 EXPLAINER = Explainer(
     title="Example panel",
     what="What.",
@@ -96,6 +99,15 @@ def test_about_block_opens_the_readme_case_for_the_atlas():
     assert layout.about().id == "about"
 
 
+def test_readme_names_the_maintainer_under_the_live_site_line():
+    text = README.read_text(encoding="utf-8")
+    assert (
+        "\nLive site: https://el-nino-atlas.onrender.com\n\n"
+        "Maintained by [Alaa Al Khourdajie](https://sites.google.com/site/akhourdajie/), "
+        "Imperial College London.\n\n"
+    ) in text
+
+
 def test_panel_holds_stage_graph_and_explainer():
     section = layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p")
     assert section.id == "p"
@@ -149,18 +161,35 @@ def test_container_is_empty_with_its_id():
     assert empty.id == "panel-activations" and not empty.children
 
 
-def test_footer_states_licences_and_citation():
+def line_text(paragraph: html.P) -> str:
+    """The text of a footer line, each link flattened to its text."""
+    return "".join(c.children if isinstance(c, html.A) else c for c in paragraph.children)
+
+
+def test_footer_states_maintainer_licences_and_citation():
     footer = layout.footer()
     assert footer.id == "footer"
-    rendered = str(footer)
-    assert "Code: MIT licence. Data: licence stated with each panel." in rendered
-    assert "Cite: " in rendered
-    (link,) = [c for c in walk(footer) if isinstance(c, html.A)]
-    assert link.href == link.children == "https://doi.org/10.5281/zenodo.22644790"
+    assert [line_text(p) for p in footer.children] == [
+        "El Niño Atlas is maintained by Alaa Al Khourdajie, Imperial College London. "
+        "ORCID: https://orcid.org/0000-0003-1376-7529",
+        "Code: MIT licence, on GitHub. Data: licence stated with each panel.",
+        "Cite: https://doi.org/10.5281/zenodo.22644790",
+    ]
+    assert [(a.children, a.href) for a in walk(footer) if isinstance(a, html.A)] == [
+        ("Alaa Al Khourdajie", "https://sites.google.com/site/akhourdajie/"),
+        ("https://orcid.org/0000-0003-1376-7529", "https://orcid.org/0000-0003-1376-7529"),
+        ("GitHub", "https://github.com/AlKhourdajie/El_Nino_Atlas"),
+        ("https://doi.org/10.5281/zenodo.22644790", "https://doi.org/10.5281/zenodo.22644790"),
+    ]
+    citation = yaml.safe_load(CITATION.read_text(encoding="utf-8"))
+    (author,) = citation["authors"]
+    assert layout.ORCID_URL == author["orcid"]
+    assert layout.REPOSITORY_URL == citation["repository-code"]
 
 
 def test_page_copy_follows_the_rules():
-    for text in (layout.OPENING, *layout.ABOUT, layout.LICENCE_LINE):
+    footer_lines = [line_text(p) for p in layout.footer().children]
+    for text in (layout.OPENING, *layout.ABOUT, *footer_lines):
         assert "—" not in text
 
 

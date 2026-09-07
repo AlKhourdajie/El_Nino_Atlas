@@ -147,8 +147,9 @@ def test_page_with_both_snapshots(monkeypatch):
     rendered = str(page)
     assert layout.OPENING in rendered
     assert " ".join(layout.ABOUT) in rendered
-    assert layout.LICENCE_LINE in rendered
-    assert layout.CITATION_URL in rendered
+    footer_urls = (layout.MAINTAINER_URL, layout.ORCID_URL, layout.REPOSITORY_URL)
+    for url in (*footer_urls, layout.CITATION_URL):
+        assert url in rendered
     assert layout.UNAVAILABLE_NOTICE not in rendered
     assert rendered.count(f"retrieved {RETRIEVED_AT}") == 2
     assert len(graphs(page)) == 3

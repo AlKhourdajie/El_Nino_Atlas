@@ -4,6 +4,8 @@
 
 Live site: https://el-nino-atlas.onrender.com
 
+Maintained by [Alaa Al Khourdajie](https://sites.google.com/site/akhourdajie/), Imperial College London.
+
 An El Niño is under way in the tropical Pacific and is forecast to become very strong by late 2026, on top of the warmest global background on record. The El Niño Atlas follows this one event forward in time, from what was forecast through what was done in anticipation to what has happened. The basis for every link is stated, and regions and periods without a record are marked as such.
 
 The atlas is a research tool in development. Version 0.2.0 (September 2026) carries three panels and one draft map. The code is released under the MIT licence, and each data source is used under its own terms, listed below.

@@ -34,7 +34,15 @@ ABOUT: tuple[str, ...] = (
 )
 
 UNAVAILABLE_NOTICE = "Data snapshot not yet available"
-LICENCE_LINE = "Code: MIT licence. Data: licence stated with each panel."
+
+# The footer links. The ORCID identifier and the repository are the ones in
+# CITATION.cff; tests/test_layout.py checks them against it.
+MAINTAINER = "Alaa Al Khourdajie"
+MAINTAINER_URL = "https://sites.google.com/site/akhourdajie/"
+AFFILIATION = "Imperial College London"
+ORCID = "0000-0003-1376-7529"
+ORCID_URL = f"https://orcid.org/{ORCID}"
+REPOSITORY_URL = "https://github.com/AlKhourdajie/El_Nino_Atlas"
 CITATION_URL = "https://doi.org/10.5281/zenodo.22644790"
 
 # Figures resize with their column; touch screens get no mode bar and no
@@ -145,11 +153,27 @@ def container(id: str) -> html.Div:
 
 
 def footer() -> html.Footer:
-    return html.Footer(
+    """The maintainer line, the licence line and the cite line, each with its links."""
+    maintainer = html.P(
         [
-            html.P(LICENCE_LINE, className="mb-1"),
-            html.P(["Cite: ", html.A(CITATION_URL, href=CITATION_URL)], className="mb-0"),
+            "El Niño Atlas is maintained by ",
+            html.A(MAINTAINER, href=MAINTAINER_URL),
+            f", {AFFILIATION}. ORCID: ",
+            html.A(ORCID_URL, href=ORCID_URL),
         ],
+        className="mb-1",
+    )
+    licence = html.P(
+        [
+            "Code: MIT licence, on ",
+            html.A("GitHub", href=REPOSITORY_URL),
+            ". Data: licence stated with each panel.",
+        ],
+        className="mb-1",
+    )
+    cite = html.P(["Cite: ", html.A(CITATION_URL, href=CITATION_URL)], className="mb-0")
+    return html.Footer(
+        [maintainer, licence, cite],
         id="footer",
         className="text-muted small mt-5 pt-3 border-top",
     )
