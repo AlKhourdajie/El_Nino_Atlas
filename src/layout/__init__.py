@@ -68,14 +68,33 @@ def about() -> html.Section:
     return section("About", html.P(" ".join(ABOUT), className="mb-0"), id="about")
 
 
-def graph(figure: go.Figure) -> dcc.Graph:
+def graph(figure: go.Figure, *, id: str | None = None) -> dcc.Graph:
     """A panel figure with the touch-screen configuration."""
-    return dcc.Graph(figure=figure, config=GRAPH_CONFIG)
+    kwargs = {"id": id} if id else {}
+    return dcc.Graph(figure=figure, config=GRAPH_CONFIG, **kwargs)
 
 
 def _panel_row(figure_column, explainer_column) -> dbc.Row:
     """Figure beside explainer on wide screens; each fills the row on narrow ones."""
     return dbc.Row([dbc.Col(figure_column, xs=12, lg=7), dbc.Col(explainer_column, xs=12, lg=5)])
+
+
+def composite_panel(
+    stage: str,
+    explainer: Explainer,
+    column,
+    *,
+    id: str,
+    retrieved_at: str | None = None,
+) -> html.Section:
+    """A panel whose figure column holds ``column``, the components the caller assembled.
+
+    The activation panel stacks the three-state legend, the map and the
+    entry table there. ``retrieved_at`` is omitted when the content is not
+    a snapshot.
+    """
+    row = _panel_row(column, render_explainer(explainer, retrieved_at))
+    return section(stage, row, id=id)
 
 
 def panel(
@@ -87,8 +106,7 @@ def panel(
     id: str,
 ) -> html.Section:
     """One panel: the stage heading, the figure, and the explainer beside it."""
-    row = _panel_row(graph(figure), render_explainer(explainer, retrieved_at))
-    return section(stage, row, id=id)
+    return composite_panel(stage, explainer, graph(figure), id=id, retrieved_at=retrieved_at)
 
 
 def unavailable_panel(stage: str, explainer: Explainer, *, id: str) -> html.Section:

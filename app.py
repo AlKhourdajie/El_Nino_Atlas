@@ -5,25 +5,30 @@ unchanged; ``run.py`` imports the same object for local serving.
 
 ``build_page`` assembles the page along the forecast, action, impact
 spine: the opening line with the latest-reading line beneath it, the
-About block, the index panel, the activations container, the commodity
-panel, the teleconnection schematic panel and the footer. Each data
-panel reads its snapshot through ``src.data_access``. A missing
-snapshot, the ``FileNotFoundError`` that ``load_frame`` raises, renders
-the panel's explainer with a visible notice and omits the latest-reading
-line; every other error propagates. The commodity panel needs both
-snapshots, because its shading comes from the index events. The
-schematic panel shows a static asset and needs no snapshot.
+About block, the index panel, the activation panel, the commodity
+panel, the teleconnection schematic panel and the footer. The index and
+commodity panels read their snapshots through ``src.data_access``. A
+missing snapshot, the ``FileNotFoundError`` that ``load_frame`` raises,
+renders the panel's explainer with a visible notice and omits the
+latest-reading line; every other error propagates. The commodity panel
+needs both snapshots, because its shading comes from the index events.
+The activation panel reads the curated register through
+``src.activations`` with example entries excluded; a register that
+fails validation raises. The schematic panel shows a static asset.
 """
 
 import dash
 import dash_bootstrap_components as dbc
 
-from src import data_access, layout, theme
+from src import activations, data_access, layout, theme
 from src.enso_events import Event, enso_event_records
-from src.layers import commodities, enso_index, teleconnections
+from src.layers import activations_map, commodities, enso_index, teleconnections
 
 EVENT = "The event"
+ANTICIPATORY_ACTION = "Anticipatory action"
 REALISED_IMPACT = "Realised impact"
+
+MAP_ID = "activations-map"
 
 
 def _snapshot(source_id: str) -> tuple | None:
@@ -42,6 +47,18 @@ def _index_panel(snapshot: tuple | None, events: list[Event] | None) -> object:
     frame, metadata = snapshot
     figure = enso_index.build_figure(frame, events)
     return layout.panel(EVENT, explainer, figure, metadata["retrieved_at"], id="panel-index")
+
+
+def _activation_panel(entries: list[dict]) -> object:
+    """The activation map beneath the shared three-state legend, with its entry table."""
+    column = [
+        layout.legend(),
+        layout.graph(activations_map.build_figure(entries), id=MAP_ID),
+        activations_map.build_table(entries),
+    ]
+    return layout.composite_panel(
+        ANTICIPATORY_ACTION, activations_map.explainer(), column, id="panel-activations"
+    )
 
 
 def _commodity_panel(snapshot: tuple | None, events: list[Event] | None) -> object:
@@ -70,11 +87,12 @@ def build_page(image_src: str = teleconnections.IMAGE_URL_PATH) -> dbc.Container
         events = enso_event_records(frame[frame["series_id"] == enso_index.PRIMARY_SERIES])
         reading = enso_index.latest_reading(frame, events)
     prices = _snapshot(commodities.SOURCE_ID)
+    entries = activations.load_activations()
     return layout.page(
         layout.opening(reading),
         layout.about(),
         _index_panel(index, events),
-        layout.container("panel-activations"),
+        _activation_panel(entries),
         _commodity_panel(prices, events),
         teleconnections.build_image_panel(image_src),
         layout.footer(),

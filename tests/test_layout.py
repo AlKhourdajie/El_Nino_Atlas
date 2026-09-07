@@ -110,6 +110,22 @@ def test_unavailable_panel_shows_notice_and_explainer():
     assert "retrieved" not in rendered
 
 
+def test_composite_panel_holds_the_callers_column_beside_the_explainer():
+    column = [html.Div(id="first"), html.Div(id="second")]
+    section = layout.composite_panel("Anticipatory action", EXPLAINER, column, id="p")
+    assert section.id == "p"
+    assert (
+        next(c for c in walk(section) if isinstance(c, html.H2)).children == "Anticipatory action"
+    )
+    ids = component_ids(section)
+    assert ids.index("first") < ids.index("second")
+    rendered = str(section)
+    assert "Example panel" in rendered
+    assert "retrieved" not in rendered
+    stamped = layout.composite_panel("Stage", EXPLAINER, column, id="q", retrieved_at="2026-09-07")
+    assert "retrieved 2026-09-07" in str(stamped)
+
+
 def test_container_is_empty_with_its_id():
     empty = layout.container("panel-activations")
     assert empty.id == "panel-activations" and not empty.children
@@ -137,12 +153,16 @@ def test_graph_config_suits_touch_screens():
         "scrollZoom": False,
     }
     assert layout.graph(go.Figure()).config == layout.GRAPH_CONFIG
+    assert getattr(layout.graph(go.Figure()), "id", None) is None
+    named = layout.graph(go.Figure(), id="activations-map")
+    assert named.id == "activations-map" and named.config == layout.GRAPH_CONFIG
 
 
 def test_every_column_fills_a_narrow_screen():
     sections = (
         layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p"),
         layout.unavailable_panel("Forecast", EXPLAINER, id="q"),
+        layout.composite_panel("Stage", EXPLAINER, [layout.legend(), html.Div()], id="r"),
     )
     for section in sections:
         columns = [c for c in walk(section) if isinstance(c, dbc.Col)]
