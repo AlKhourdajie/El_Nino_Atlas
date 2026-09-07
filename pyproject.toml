@@ -1,6 +1,6 @@
 [project]
 name = "el-nino-atlas"
-version = "0.1.0"
+version = "0.2.0"
 description = "Open-source interactive tracker linking the 2026-27 El Niño to realised socioeconomic impacts: forecast, anticipatory action, realised impact."
 readme = "README.md"
 license = { file = "LICENSE" }
