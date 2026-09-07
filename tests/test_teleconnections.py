@@ -1,8 +1,10 @@
 """Tests for the draft teleconnection schematic layer in src/layers/teleconnections.py."""
 
 import copy
+import hashlib
 import json
 
+import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pytest
 
@@ -214,6 +216,8 @@ def public_copy() -> list[str]:
         *explainer.captions,
         tc.TITLE,
         tc.LEGEND_TITLE,
+        tc.PANEL_TITLE,
+        tc.IMAGE_ALT,
         *tc.SIGNAL_LABELS.values(),
     ]
 
@@ -227,3 +231,48 @@ def test_public_copy_rules():
     assert "increased rainfall across the east-central and eastern Pacific" in explainer.how
     assert "computed composites" in explainer.not_shown
     assert "December to February" in explainer.what
+
+
+def test_not_shown_states_the_text_and_image_discrepancies():
+    not_shown = tc.explainer().not_shown
+    assert "Central America" in not_shown
+    assert "south-western United States" in not_shown
+
+
+def test_image_panel_shows_the_schematic_with_its_explainer():
+    card = tc.build_image_panel()
+    assert isinstance(card, dbc.Card)
+    rendered = str(card)
+    assert tc.IMAGE_ASSET in rendered
+    assert "/assets/teleconnections/noaa_cpc_elnino_impacts_djf.jpg" in rendered
+    for _field, label in BLOCKS:
+        assert label in rendered
+    assert "draft" in tc.PANEL_TITLE.lower()
+    assert tc.PANEL_TITLE in rendered
+    assert tc.IMAGE_ALT in rendered
+    assert tc.SOURCE_URL in rendered
+    assert f"retrieved {tc.IMAGE_RETRIEVED_AT}" in rendered
+
+
+def test_image_fills_the_column_and_keeps_its_ratio():
+    assert tc.IMAGE_STYLE["maxWidth"] == "100%"
+    assert tc.IMAGE_STYLE["width"] == "100%"
+    assert tc.IMAGE_STYLE["height"] == "auto"
+    rendered = str(tc.build_image_panel())
+    assert "'maxWidth': '100%'" in rendered
+    assert "'height': 'auto'" in rendered
+
+
+def test_image_panel_accepts_the_app_asset_url():
+    rendered = str(tc.build_image_panel(image_src="/prefix/assets/x.jpg", retrieved_at=None))
+    assert "/prefix/assets/x.jpg" in rendered
+    assert f"retrieved {tc.IMAGE_RETRIEVED_AT}" not in rendered
+
+
+def test_asset_is_byte_identical_to_the_retrieved_image():
+    data = tc.IMAGE_FILE.read_bytes()
+    assert data[:3] == b"\xff\xd8\xff", "the asset is a JPEG"
+    assert hashlib.sha256(data).hexdigest() == tc.IMAGE_SHA256
+    provenance = (tc.IMAGE_FILE.parent / "PROVENANCE.md").read_text(encoding="utf-8")
+    for needle in (tc.IMAGE_SHA256, tc.IMAGE_RETRIEVED_AT, tc.IMAGE_URL, tc.SOURCE_URL):
+        assert needle in provenance
