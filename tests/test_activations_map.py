@@ -1,0 +1,210 @@
+"""Tests for the anticipatory-action activation map layer."""
+
+import logging
+
+import pycountry
+import pytest
+
+from src import theme
+from src.activations import REGISTER_PATH, load_activations
+from src.layers import activations_map as layer
+from src.layers.activations_map import (
+    GRAPH_CONFIG,
+    NOT_TRACKED,
+    STATE_ORDER,
+    build_figure,
+    build_panel,
+    build_table,
+    explainer,
+)
+from src.layout.explainer import Explainer
+from tests.test_activations import discrepancy, example_entry, no_activation_entry
+
+
+def entries() -> list[dict]:
+    return [example_entry(), no_activation_entry()]
+
+
+def choropleth(fig):
+    return next(t for t in fig.data if t.type == "choropleth")
+
+
+def legend_traces(fig):
+    return [t for t in fig.data if t.type == "scattergeo"]
+
+
+def state_of(fig, iso3: str) -> str:
+    trace = choropleth(fig)
+    return STATE_ORDER[int(trace.z[list(trace.locations).index(iso3)])]
+
+
+def colour_of(fig, iso3: str) -> str:
+    """Resolve the fill colour plotly gives ``iso3`` through the stepped colourscale."""
+    trace = choropleth(fig)
+    z = trace.z[list(trace.locations).index(iso3)]
+    normalised = (z - trace.zmin) / (trace.zmax - trace.zmin)
+    bands = [(float(start), colour) for start, colour in trace.colorscale[::2]]
+    return [colour for start, colour in bands if start <= normalised + 1e-9][-1]
+
+
+def test_every_pycountry_code_is_a_location():
+    trace = choropleth(build_figure(entries()))
+    assert trace.locationmode == "ISO-3"
+    assert sorted(trace.locations) == sorted(c.alpha_3 for c in pycountry.countries)
+    assert len(trace.locations) == len(set(trace.locations))
+
+
+def test_entries_take_alert_and_no_alert_and_others_not_tracked():
+    fig = build_figure(entries())
+    assert state_of(fig, "GTM") == "alert"
+    assert state_of(fig, "NIC") == "no_alert"
+    assert state_of(fig, "HND") == NOT_TRACKED
+    others = [c for c in choropleth(fig).locations if c not in ("GTM", "NIC")]
+    assert all(state_of(fig, code) == NOT_TRACKED for code in others)
+
+
+def test_no_entry_renders_with_the_not_tracked_colour():
+    fig = build_figure(entries())
+    not_tracked = theme.STATE_COLOURS[NOT_TRACKED]
+    for entry in entries():
+        assert state_of(fig, entry["iso3"]) != NOT_TRACKED
+        assert colour_of(fig, entry["iso3"]) != not_tracked
+    assert colour_of(fig, "GTM") == theme.STATE_COLOURS["alert"]
+    assert colour_of(fig, "NIC") == theme.STATE_COLOURS["no_alert"]
+    assert colour_of(fig, "HND") == not_tracked
+
+
+def test_colourscale_uses_only_the_three_theme_tokens():
+    colours = {colour for _, colour in choropleth(build_figure(entries())).colorscale}
+    assert colours == set(theme.STATE_COLOURS.values())
+
+
+def test_example_entry_never_renders():
+    flagged = {**example_entry(), "example": True}
+    fig = build_figure([flagged])
+    assert state_of(fig, "GTM") == NOT_TRACKED
+    assert "example_gtm_cerf_aa" not in str(build_table([flagged]))
+
+    register = load_activations(REGISTER_PATH, include_examples=True)
+    examples = [e for e in register if e.get("example")]
+    assert examples, "the register should carry its example entry"
+    fig = build_figure(register)
+    for entry in examples:
+        assert state_of(fig, entry["iso3"]) == NOT_TRACKED
+    rendered = str(build_panel(register))
+    assert all(entry["id"] not in rendered for entry in examples)
+
+
+def test_register_without_real_entries_renders_no_rows():
+    rendered = str(build_table(load_activations(REGISTER_PATH)))
+    assert layer.NO_ENTRIES_TEXT in rendered
+
+
+def test_country_with_mixed_entries_renders_activated():
+    mixed = [
+        no_activation_entry(),
+        {**example_entry(), "id": "nic_wfp", "iso3": "NIC", "framework": "wfp_aa"},
+    ]
+    assert state_of(build_figure(mixed), "NIC") == "alert"
+    assert state_of(build_figure(list(reversed(mixed))), "NIC") == "alert"
+
+
+def test_hover_shows_country_framework_date_amount_and_people():
+    trace = choropleth(build_figure(entries()))
+    hover = dict(zip(trace.locations, trace.text, strict=True))
+    for needle in (
+        "<b>Guatemala</b>",
+        "Central Emergency Response Fund (CERF) anticipatory action",
+        "Date: 5 March 2026",
+        "Amount (US dollars): 1,000,000",
+        "People targeted: 20,000",
+    ):
+        assert needle in hover["GTM"]
+    assert "Status: Framework, no activation" in hover["NIC"]
+    assert hover["NIC"].count("none") == 3
+    assert hover["HND"] == "<b>Honduras</b><br>Not tracked: no entry in the register"
+    assert trace.hovertemplate == "%{text}<extra></extra>"
+
+
+def test_null_figures_render_as_not_assessed():
+    unknown = {**example_entry(), "amount_usd": None, "people_targeted": None, "trigger": None}
+    trace = choropleth(build_figure([unknown]))
+    hover = dict(zip(trace.locations, trace.text, strict=True))["GTM"]
+    assert "Amount (US dollars): not assessed" in hover
+    assert "People targeted: not assessed" in hover
+    assert "not assessed" in str(build_table([unknown]))
+
+
+def test_layout_is_static_natural_earth():
+    fig = build_figure(entries())
+    assert fig.layout.dragmode is False
+    assert fig.layout.geo.projection.type == "natural earth"
+    assert choropleth(fig).showscale is False
+    assert GRAPH_CONFIG["scrollZoom"] is False
+
+
+def test_legend_lists_the_three_states_with_definitions():
+    traces = legend_traces(build_figure(entries()))
+    assert len(traces) == len(STATE_ORDER)
+    by_colour = {t.marker.color: t.name for t in traces}
+    for state in STATE_ORDER:
+        name = by_colour[theme.STATE_COLOURS[state]]
+        assert name.startswith(layer.STATE_LABELS[state] + ": ")
+        assert name.endswith(layer.STATE_DEFINITIONS[state])
+    assert all(t.showlegend is True and t.hoverinfo == "skip" for t in traces)
+
+
+def test_unplaceable_code_count_is_logged(caplog):
+    with caplog.at_level(logging.INFO, logger="src.layers.activations_map"):
+        build_figure(entries())
+    messages = [r.getMessage() for r in caplog.records]
+    assert any(f"of {len(pycountry.countries)} ISO-3 codes" in m for m in messages)
+
+
+def test_plotly_country_table_is_read_from_the_bundle():
+    codes = layer.plotly_country_codes()
+    assert len(codes) >= 200
+    assert {"GTM", "HND", "SLV", "NIC"} <= codes
+
+
+def test_table_links_and_discrepancy_note():
+    with_note = {**example_entry(), "discrepancies": [discrepancy()]}
+    rendered = str(build_table([with_note, no_activation_entry()]))
+    assert example_entry()["source_url"] in rendered
+    assert example_entry()["wayback_url"] in rendered
+    assert "Companion documents differ." in rendered
+    assert "Amount released, companion document: 900,000" in rendered
+    assert "https://example.org/companion" in rendered
+    assert "activation-example_gtm_cerf_aa" in rendered
+    assert "activation-example_nic_cerf_aa" in rendered
+
+    plain = str(build_table([{**no_activation_entry(), "wayback_url": None}]))
+    assert "Companion documents differ." not in plain
+    assert "none" in plain
+
+
+def test_panel_holds_graph_and_table():
+    rendered = str(build_panel(entries()))
+    assert "activations-map" in rendered
+    assert "activations-table" in rendered
+
+
+def test_explainer_contract():
+    ex = explainer()
+    assert isinstance(ex, Explainer)
+    assert ex.licence_label == "per document, linked"
+    for agency in ("OCHA", "WFP", "FAO"):
+        assert agency in ex.source_name
+    assert ex.source_url.startswith("https://cerf.un.org")
+    assert layer.CERF_ANTICIPATORY_ACTION_URL in ex.how
+    assert "says nothing about whether the hazard occurred" in ex.not_shown
+    for text in (ex.title, ex.what, ex.how, ex.why, ex.not_shown, ex.source_name):
+        assert "—" not in text, "no em-dashes in public copy"
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [(1_000_000, "1,000,000"), (2.5, "2.50"), (3.0, "3"), ("USD 2.4 million", "USD 2.4 million")],
+)
+def test_format_figure(value, expected):
+    assert layer.format_figure(value) == expected
