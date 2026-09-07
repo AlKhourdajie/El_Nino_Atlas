@@ -55,7 +55,7 @@ def index_frame(
                     "value": [float(v) for v in series_values],
                     "unit": unit,
                     "retrieved_at": RETRIEVED_AT,
-                    "licence_id": "US-PD",
+                    "licence_id": "LicenseRef-US-PD",
                 }
             )
         )
