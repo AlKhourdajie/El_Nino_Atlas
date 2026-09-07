@@ -1,0 +1,50 @@
+# Nightly snapshot update.
+#
+# Runs every registered fetcher, tests the result, then commits any
+# change under data/snapshots/ as github-actions[bot] and pushes it.
+#
+# Pushes made with GITHUB_TOKEN do not trigger other workflows, so the
+# "Update snapshots" commit never runs the CI workflow (ci.yml). That is
+# why pytest runs here, after the update and before the commit. Render's
+# webhook still fires on push; whether that deploys is governed by
+# autoDeploy in render.yaml.
+
+name: Nightly update
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Sync environment
+        run: uv sync --locked
+      - name: Update snapshots
+        run: uv run python run.py update
+      - name: Test
+        run: uv run pytest -q
+      - name: Commit and push snapshots
+        run: |
+          if [ -z "$(git status --porcelain -- data/snapshots)" ]; then
+            echo "No snapshot changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- data/snapshots
+          git commit -m "Update snapshots"
+          git push
