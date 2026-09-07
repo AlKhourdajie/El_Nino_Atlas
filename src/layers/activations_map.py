@@ -25,14 +25,20 @@ entries all have status ``framework_no_activation``, and
 pycountry. A country with any activated entry renders as activated.
 Entries flagged ``example`` never render.
 
+Colour never carries a state alone. Every country with an entry also
+gets a marker at its centroid in the state's mark style, filled for an
+activation and outlined for a framework with no activation, and the
+legend pairs each label with the same mark; the hover text and the table
+state the status in words.
+
 Placement
 ---------
 Every ISO 3166-1 alpha-3 code in pycountry is passed as a location.
-plotly.js matches codes against the topojson it fetches at render time
-and logs each code without geometry to the browser console.
-``build_figure`` logs how many codes are absent from the country table
-embedded in the bundled plotly.js, which Dash serves to the browser; a
-code absent from that table is never placed.
+plotly.js matches codes against the topojson the app serves from
+``assets/topojson/`` and logs each code without geometry to the browser
+console. ``build_figure`` logs how many codes are absent from the
+country table embedded in the bundled plotly.js, which Dash serves to
+the browser; a code absent from that table is never placed.
 """
 
 from __future__ import annotations
@@ -43,14 +49,13 @@ from datetime import date
 from functools import cache
 from pathlib import Path
 
-import dash_bootstrap_components as dbc
 import plotly
 import plotly.graph_objects as go
 import pycountry
 from dash import dcc, html
 
 from src import theme
-from src.layout import TEXT_COLUMN_MIN_WIDTH
+from src.layout import MAP_CONFIG, TEXT_COLUMN_MIN_WIDTH
 from src.layout.explainer import Explainer
 
 logger = logging.getLogger(__name__)
@@ -87,6 +92,7 @@ FRAMEWORK_LABELS: dict[str, str] = {
 NOT_ASSESSED_TEXT = "not assessed"
 NONE_TEXT = "none"
 NO_ENTRIES_TEXT = "No entries in the register."
+DISCREPANCY_PREFIX = "Companion documents differ. "
 
 PROJECTION = "natural earth"
 # plotly.js wraps a horizontal legend into columns as wide as its widest
@@ -95,7 +101,8 @@ PROJECTION = "natural earth"
 LEGEND_FONT_SIZE = 12
 # 50 m geometry keeps small island states, which El Niño exposes, on the map.
 RESOLUTION = 50
-GRAPH_CONFIG: dict[str, bool] = {"scrollZoom": False, "displayModeBar": False}
+MARKER_SIZE = 9
+GRAPH_CONFIG: dict = dict(MAP_CONFIG)
 
 TABLE_HEADERS: tuple[str, ...] = (
     "Country",
@@ -221,8 +228,27 @@ def _country_name(country) -> str:
     return getattr(country, "common_name", None) or country.name
 
 
+def _marker(state: str) -> dict:
+    """The centroid marker for ``state``: filled for alert, outlined for no alert."""
+    colour = theme.STATE_COLOURS[state]
+    marker = {
+        "size": MARKER_SIZE,
+        "symbol": theme.STATE_MARKER_SYMBOLS[state],
+        "color": colour,
+        "line": {"color": theme.MAP_BORDER, "width": 1.5},
+    }
+    if theme.STATE_MARKS[state] == "outlined":
+        marker["line"] = {"color": colour, "width": 2}
+        marker["color"] = theme.MAP_BORDER
+    return marker
+
+
 def build_figure(entries: list[dict]) -> go.Figure:
-    """Choropleth of every pycountry code in one of the three states."""
+    """Choropleth of every pycountry code in one of the three states.
+
+    Countries with an entry also carry a centroid marker in the state's
+    mark style; the three legend traces pair each label with that mark.
+    """
     entries = rendered_entries(entries)
     states = country_states(entries)
     by_iso3: dict[str, list[dict]] = {}
@@ -257,19 +283,25 @@ def build_figure(entries: list[dict]) -> go.Figure:
             showlegend=False,
             text=text,
             hovertemplate="%{text}<extra></extra>",
-            marker={"line": {"color": theme.LIGHT["grid"], "width": 0.4}},
+            marker={"line": {"color": theme.MAP_BORDER, "width": 0.4}},
         )
     )
-    # Short legend labels keep the horizontal legend beneath the map on a
-    # narrow screen; the definitions stay in the hover text and the explainer.
+    # One trace per state: its legend entry, and the centroid markers of
+    # the countries in that state. Short legend labels keep the horizontal
+    # legend beneath the map on a narrow screen; the definitions stay in
+    # the hover text and the explainer. The not-tracked trace places no
+    # marker, because its state is the absence of an entry.
     for state in reversed(STATE_ORDER):
+        located = sorted(code for code, s in states.items() if s == state)
         fig.add_trace(
             go.Scattergeo(
                 name=STATE_LABELS[state],
-                lon=[None],
-                lat=[None],
+                locations=located or None,
+                locationmode="ISO-3",
+                lon=None if located else [None],
+                lat=None if located else [None],
                 mode="markers",
-                marker={"size": 12, "symbol": "square", "color": theme.STATE_COLOURS[state]},
+                marker=_marker(state),
                 hoverinfo="skip",
                 showlegend=True,
             )
@@ -288,6 +320,8 @@ def build_figure(entries: list[dict]) -> go.Figure:
     )
     fig.update_layout(
         dragmode=False,
+        height=theme.MAP_HEIGHT,
+        uirevision=theme.UI_REVISION,
         margin={"l": 0, "r": 0, "t": 8, "b": 8},
         legend={
             "orientation": "h",
@@ -308,7 +342,7 @@ def discrepancy_note(entry: dict) -> list:
     items = entry["discrepancies"]
     if not items:
         return []
-    children: list = ["Companion documents differ. "]
+    children: list = [DISCREPANCY_PREFIX]
     for i, item in enumerate(items):
         if i:
             children.append(" ")
@@ -316,6 +350,11 @@ def discrepancy_note(entry: dict) -> list:
         children.append(html.A("source", href=item["source_url"], target="_blank"))
         children.append(").")
     return children
+
+
+def has_discrepancies(entries: list[dict]) -> bool:
+    """Whether any rendered entry carries a discrepancy record."""
+    return any(entry["discrepancies"] for entry in rendered_entries(entries))
 
 
 def _link(label: str, url: str | None) -> object:
@@ -350,24 +389,26 @@ def table_row(entry: dict) -> html.Tr:
     return html.Tr(cells, id=f"activation-{entry['id']}")
 
 
-def build_table(entries: list[dict]) -> dbc.Table:
-    """Every rendered entry with its source and archived links and any discrepancy note."""
+def build_table(entries: list[dict]) -> html.Div:
+    """Every rendered entry with its source and archived links and any discrepancy note.
+
+    The table sits in a scrolling wrapper so that its ten columns never
+    widen the page.
+    """
     entries = rendered_entries(entries)
     if entries:
         rows = [table_row(e) for e in entries]
     else:
         rows = [html.Tr(html.Td(NO_ENTRIES_TEXT, colSpan=len(TABLE_HEADERS)))]
-    return dbc.Table(
+    table = html.Table(
         [
             html.Thead(html.Tr([_cell(h, h, html.Th) for h in TABLE_HEADERS])),
             html.Tbody(rows),
         ],
-        size="sm",
-        hover=True,
-        responsive=True,
-        className="small mt-3",
+        className="table",
         id="activations-table",
     )
+    return html.Div(table, className="table-wrap", id="activations-table-wrap")
 
 
 def build_panel(entries: list[dict]) -> html.Div:
