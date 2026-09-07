@@ -10,7 +10,7 @@ services:
   - type: web
     name: el-nino-atlas
     runtime: python
-    plan: free
+    plan: starter
     branch: main
     autoDeploy: true
     # Build with uv from the committed lock file; fall back to pip if uv
