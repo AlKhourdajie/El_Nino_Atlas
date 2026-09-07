@@ -2,9 +2,11 @@ cff-version: 1.2.0
 message: If you use this software, please cite it as below.
 title: El Niño Atlas
 type: software
-version: 0.1.0
-date-released: "2026-09-05"
+version: 0.2.0
+date-released: "2026-09-07"
+doi: 10.5281/zenodo.22644790
 license: MIT
+url: https://el-nino-atlas.onrender.com
 repository-code: https://github.com/AlKhourdajie/El_Nino_Atlas
 abstract: >-
   Open-source interactive tracker linking the 2026-27 El Niño to realised
