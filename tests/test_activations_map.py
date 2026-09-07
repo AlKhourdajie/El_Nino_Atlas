@@ -4,6 +4,7 @@ import logging
 
 import pycountry
 import pytest
+from dash import html
 
 from src import theme
 from src.activations import REGISTER_PATH, load_activations
@@ -18,6 +19,7 @@ from src.layers.activations_map import (
     explainer,
 )
 from src.layout.explainer import Explainer
+from tests.support import walk
 from tests.test_activations import discrepancy, example_entry, no_activation_entry
 
 
@@ -152,15 +154,40 @@ def test_layout_is_static_natural_earth():
     assert GRAPH_CONFIG["scrollZoom"] is False
 
 
-def test_legend_lists_the_three_states_with_definitions():
-    traces = legend_traces(build_figure(entries()))
+def test_legend_lists_the_three_state_labels_beneath_the_map():
+    fig = build_figure(entries())
+    traces = legend_traces(fig)
     assert len(traces) == len(STATE_ORDER)
     by_colour = {t.marker.color: t.name for t in traces}
     for state in STATE_ORDER:
-        name = by_colour[theme.STATE_COLOURS[state]]
-        assert name.startswith(layer.STATE_LABELS[state] + ": ")
-        assert name.endswith(layer.STATE_DEFINITIONS[state])
+        # Short labels keep the horizontal legend inside a narrow screen; the
+        # definitions stay in the hover text.
+        assert by_colour[theme.STATE_COLOURS[state]] == layer.STATE_LABELS[state]
     assert all(t.showlegend is True and t.hoverinfo == "skip" for t in traces)
+    assert fig.layout.legend.orientation == "h"
+    assert fig.layout.legend.yanchor == "top" and fig.layout.legend.y <= 0
+    assert fig.layout.legend.font.size == layer.LEGEND_FONT_SIZE
+    hover = dict(zip(choropleth(fig).locations, choropleth(fig).text, strict=True))
+    assert layer.STATE_DEFINITIONS[NOT_TRACKED] in hover["HND"]
+
+
+def test_prose_columns_keep_a_minimum_width():
+    table = build_table(entries())
+    (header_row,) = [
+        tr for tr in walk(table) if isinstance(tr, html.Tr) and getattr(tr, "id", None) is None
+    ]
+    widths = {th.children: getattr(th, "style", None) for th in header_row.children}
+    for column in ("Trigger", "Notes"):
+        assert widths[column] == {"minWidth": layer.TEXT_COLUMN_MIN_WIDTH}
+    assert all(widths[c] is None for c in layer.TABLE_HEADERS if c not in ("Trigger", "Notes"))
+    (row,) = [
+        tr for tr in walk(table) if getattr(tr, "id", None) == "activation-example_gtm_cerf_aa"
+    ]
+    cells = dict(zip(layer.TABLE_HEADERS, row.children, strict=True))
+    assert cells["Trigger"].style == {"minWidth": layer.TEXT_COLUMN_MIN_WIDTH}
+    assert cells["Notes"].style == {"minWidth": layer.TEXT_COLUMN_MIN_WIDTH}
+    assert getattr(cells["Country"], "style", None) is None
+    assert layer.TEXT_COLUMN_MIN_WIDTH.endswith("rem")
 
 
 def test_unplaceable_code_count_is_logged(caplog):

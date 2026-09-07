@@ -41,6 +41,10 @@ CITATION_URL = "https://doi.org/10.5281/zenodo.22644790"
 # scroll zoom, so the page scrolls past a figure instead of into it.
 GRAPH_CONFIG: dict = {"responsive": True, "displayModeBar": False, "scrollZoom": False}
 
+# A table column of prose keeps at least this width inside the table's
+# scrolling container, so its rows keep a normal height on narrow screens.
+TEXT_COLUMN_MIN_WIDTH = "20rem"
+
 
 def section(title: str, *children, id: str | None = None) -> html.Section:
     """A titled page section."""

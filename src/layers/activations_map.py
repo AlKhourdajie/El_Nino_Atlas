@@ -50,6 +50,7 @@ import pycountry
 from dash import dcc, html
 
 from src import theme
+from src.layout import TEXT_COLUMN_MIN_WIDTH
 from src.layout.explainer import Explainer
 
 logger = logging.getLogger(__name__)
@@ -88,6 +89,10 @@ NONE_TEXT = "none"
 NO_ENTRIES_TEXT = "No entries in the register."
 
 PROJECTION = "natural earth"
+# plotly.js wraps a horizontal legend into columns as wide as its widest
+# item; at this size the widest label takes under half of a 390 px screen,
+# so the legend keeps two rows there and one row on wide screens.
+LEGEND_FONT_SIZE = 12
 # 50 m geometry keeps small island states, which El Niño exposes, on the map.
 RESOLUTION = 50
 GRAPH_CONFIG: dict[str, bool] = {"scrollZoom": False, "displayModeBar": False}
@@ -104,6 +109,9 @@ TABLE_HEADERS: tuple[str, ...] = (
     "Archived copy",
     "Notes",
 )
+# Columns of prose keep ``TEXT_COLUMN_MIN_WIDTH`` inside the table's
+# scrolling container, so rows keep a normal height on narrow screens.
+PROSE_COLUMNS: frozenset[str] = frozenset({"Trigger", "Notes"})
 
 CERF_ANTICIPATORY_ACTION_URL = "https://cerf.un.org/anticipatory-action"
 
@@ -252,10 +260,12 @@ def build_figure(entries: list[dict]) -> go.Figure:
             marker={"line": {"color": theme.LIGHT["grid"], "width": 0.4}},
         )
     )
+    # Short legend labels keep the horizontal legend beneath the map on a
+    # narrow screen; the definitions stay in the hover text and the explainer.
     for state in reversed(STATE_ORDER):
         fig.add_trace(
             go.Scattergeo(
-                name=f"{STATE_LABELS[state]}: {STATE_DEFINITIONS[state]}",
+                name=STATE_LABELS[state],
                 lon=[None],
                 lat=[None],
                 mode="markers",
@@ -285,6 +295,7 @@ def build_figure(entries: list[dict]) -> go.Figure:
             "xanchor": "left",
             "y": 0,
             "yanchor": "top",
+            "font": {"size": LEGEND_FONT_SIZE},
             "itemclick": False,
             "itemdoubleclick": False,
         },
@@ -313,24 +324,30 @@ def _link(label: str, url: str | None) -> object:
     return html.A(label, href=url, target="_blank")
 
 
+def _cell(column: str, children, cell=html.Td):
+    """A table cell; prose columns carry the minimum width."""
+    if column in PROSE_COLUMNS:
+        return cell(children, style={"minWidth": TEXT_COLUMN_MIN_WIDTH})
+    return cell(children)
+
+
 def table_row(entry: dict) -> html.Tr:
     state = STATE_BY_STATUS[entry["status"]]
     trigger = entry["trigger"] if entry["trigger"] is not None else NOT_ASSESSED_TEXT
-    return html.Tr(
-        [
-            html.Td(entry["country"]),
-            html.Td(FRAMEWORK_LABELS[entry["framework"]]),
-            html.Td(STATE_LABELS[state]),
-            html.Td(entry_date(entry)),
-            html.Td(entry_amount(entry)),
-            html.Td(entry_people(entry)),
-            html.Td(trigger),
-            html.Td(_link("document", entry["source_url"])),
-            html.Td(_link("archived", entry["wayback_url"])),
-            html.Td(discrepancy_note(entry)),
-        ],
-        id=f"activation-{entry['id']}",
-    )
+    values = [
+        entry["country"],
+        FRAMEWORK_LABELS[entry["framework"]],
+        STATE_LABELS[state],
+        entry_date(entry),
+        entry_amount(entry),
+        entry_people(entry),
+        trigger,
+        _link("document", entry["source_url"]),
+        _link("archived", entry["wayback_url"]),
+        discrepancy_note(entry),
+    ]
+    cells = [_cell(column, value) for column, value in zip(TABLE_HEADERS, values, strict=True)]
+    return html.Tr(cells, id=f"activation-{entry['id']}")
 
 
 def build_table(entries: list[dict]) -> dbc.Table:
@@ -342,7 +359,7 @@ def build_table(entries: list[dict]) -> dbc.Table:
         rows = [html.Tr(html.Td(NO_ENTRIES_TEXT, colSpan=len(TABLE_HEADERS)))]
     return dbc.Table(
         [
-            html.Thead(html.Tr([html.Th(h) for h in TABLE_HEADERS])),
+            html.Thead(html.Tr([_cell(h, h, html.Th) for h in TABLE_HEADERS])),
             html.Tbody(rows),
         ],
         size="sm",
