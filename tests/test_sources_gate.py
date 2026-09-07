@@ -27,6 +27,9 @@ REQUIRED_FIELDS = {
     "publisher",
     "url",
     "licence",
+    "licence_id",
+    "terms_url",
+    "deep_url",
     "redistribution",
     "attribution",
     "cadence",
@@ -34,6 +37,16 @@ REQUIRED_FIELDS = {
     "reason",
     "notes",
 }
+# SPDX identifiers (CC-BY-4.0) or LicenseRef- identifiers (LicenseRef-US-PD).
+LICENCE_ID_RE = re.compile(r"^(LicenseRef-)?[A-Za-z0-9][A-Za-z0-9.-]*$")
+URL_RE = re.compile(r"^https?://\S+$")
+PINK_SHEET_SERIES = [
+    ("COFFEE_ARABIC", "Coffee, Arabica", "$/kg"),
+    ("COFFEE_ROBUS", "Coffee, Robusta", "$/kg"),
+    ("COCOA", "Cocoa", "$/kg"),
+    ("SUGAR_WLD", "Sugar, world", "$/kg"),
+    ("RICE_05", "Rice, Thai 5%", "$/mt"),
+]
 FETCHABLE_STATUSES = {"approved", "conditional"}
 # Superseded is an editorial choice, not a licence bar, but for the fetcher
 # gate it behaves exactly as excluded.
@@ -64,6 +77,52 @@ def test_registry_schema(sources):
         reason = entry["reason"]
         assert isinstance(reason, str) and reason.strip(), f"{source_id}: empty reason"
         assert "\n" not in reason.strip(), f"{source_id}: reason must be one line"
+
+
+def _urls(value) -> list:
+    return list(value) if isinstance(value, list) else [value]
+
+
+def test_licence_ids_and_links(sources):
+    for source_id, entry in sources.items():
+        licence_id = entry["licence_id"]
+        if entry["status"] in FETCHABLE_STATUSES:
+            assert isinstance(licence_id, str), f"{source_id}: fetchable entries need a licence_id"
+        if licence_id is not None:
+            assert LICENCE_ID_RE.match(licence_id), f"{source_id}: bad licence_id {licence_id!r}"
+        for field in ("terms_url", "deep_url"):
+            for url in _urls(entry[field]):
+                assert url is None or URL_RE.match(url), f"{source_id}: bad {field} {url!r}"
+        if entry["terms_url"] is None:
+            assert "terms_url to verify" in entry["notes"], (
+                f"{source_id}: notes must name the terms page to verify"
+            )
+
+
+def test_data_source_series_are_recorded(sources):
+    assert sources["noaa_oni"]["series"] == ["ONI", "RONI"]
+    assert sources["noaa_oni"]["deep_url"] == [
+        "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
+        "https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt",
+    ]
+    pink = sources["worldbank_pink_sheet"]["series"]
+    assert [(s["code"], s["name"], s["unit"]) for s in pink] == PINK_SHEET_SERIES
+    assert sources["worldbank_pink_sheet"]["deep_url"] == sources["worldbank_pink_sheet"]["url"]
+
+
+def test_approved_redistributable_sources(sources):
+    approved = {
+        sid
+        for sid, e in sources.items()
+        if e["status"] == "approved" and e["redistribution"] == "yes"
+    }
+    assert approved == {
+        "noaa_oni",
+        "worldbank_pink_sheet",
+        "noaa_cpc_enso_impacts_schematic",
+        "faostat",
+    }
+    assert sources["noaa_cpc_enso_impacts_schematic"]["licence_id"] == "LicenseRef-US-PD"
 
 
 def test_every_fetcher_has_fetchable_source(sources):
@@ -139,6 +198,7 @@ def test_no_data_files_tracked_in_git(sources):
         ("data/snapshots/noaa_oni/latest.csv", True),
         ("data/snapshots/noaa_oni/latest.json", True),
         ("data/snapshots/worldbank_pink_sheet/latest.csv", True),
+        ("data/snapshots/noaa_cpc_enso_impacts_schematic/latest.json", True),
         ("data/snapshots/noaa_oni/2026-09.csv", False),
         ("data/snapshots/noaa_oni/raw/oni.ascii.txt", False),
         ("data/snapshots/fews_net/latest.csv", False),

@@ -10,7 +10,9 @@ Columns (all required, no extras):
     value         float; finite; missing values are omitted, never NaN
     unit          unit string ("degC", "USD/kg", "index")
     retrieved_at  UTC ISO 8601 timestamp of retrieval, e.g. 2026-09-05T17:00:00Z
-    licence_id    short licence identifier ("US-PD", "CC-BY-4.0")
+    licence_id    licence identifier ("LicenseRef-US-PD", "CC-BY-4.0"); must
+                  equal the ``licence_id`` of the registry entry for the
+                  row's source_id
 
 ``validate_frame`` raises ``ValueError`` with a specific message on the
 first violation found. It never repairs, coerces or drops rows.
@@ -109,6 +111,23 @@ def _require_finite_floats(df: pd.DataFrame) -> None:
         raise ValueError(f"column 'value' contains a non-finite value at row {idx}")
 
 
+def _require_registry_licence_ids(df: pd.DataFrame) -> None:
+    """Every row's licence_id must equal the registry value for its source_id."""
+    for sid in sorted(set(df["source_id"])):
+        expected = registry()[sid].get("licence_id")
+        if not isinstance(expected, str) or not expected.strip():
+            raise ValueError(
+                f"registry entry {sid!r} has no licence_id in src/sources.yaml, so its "
+                "frames cannot be validated"
+            )
+        found = sorted(set(df.loc[df["source_id"] == sid, "licence_id"]))
+        if found != [expected]:
+            raise ValueError(
+                f"licence_id for source_id {sid!r} must be {expected!r} as recorded in "
+                f"src/sources.yaml; got {found}"
+            )
+
+
 def validate_frame(df: pd.DataFrame) -> pd.DataFrame:
     """Validate ``df`` against the contract and return it unchanged.
 
@@ -138,6 +157,7 @@ def validate_frame(df: pd.DataFrame) -> pd.DataFrame:
     if barred:
         statuses = {sid: registry()[sid]["status"] for sid in barred}
         raise ValueError(f"source_id must have status approved or conditional; got {statuses}")
+    _require_registry_licence_ids(df)
 
     _require_iso_dates(df)
     _require_finite_floats(df)

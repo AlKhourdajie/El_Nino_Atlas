@@ -44,7 +44,7 @@ def oni_frame(values: list[float], start: str = "2000-01-01") -> pd.DataFrame:
             "value": [float(v) for v in values],
             "unit": "degC",
             "retrieved_at": "2026-09-05T17:00:00Z",
-            "licence_id": "US-PD",
+            "licence_id": "LicenseRef-US-PD",
         }
     )
 

@@ -11,13 +11,13 @@ def good_frame() -> pd.DataFrame:
     return pd.DataFrame(
         {
             "source_id": ["noaa_oni", "noaa_oni", "worldbank_pink_sheet"],
-            "series_id": ["oni", "oni", "COFFEE_ARABIC"],
-            "region": ["nino34", "nino34", "global"],
+            "series_id": ["ONI", "ONI", "COFFEE_ARABIC"],
+            "region": ["NINO3.4", "NINO3.4", "global"],
             "date": ["1997-12-01", "1998-01-01", "2024-01-01"],
             "value": [2.4, 2.2, 4.1],
-            "unit": ["degC", "degC", "USD/kg"],
+            "unit": ["degC", "degC", "$/kg"],
             "retrieved_at": ["2026-09-05T17:00:00Z"] * 3,
-            "licence_id": ["US-PD", "US-PD", "CC-BY-4.0"],
+            "licence_id": ["LicenseRef-US-PD", "LicenseRef-US-PD", "CC-BY-4.0"],
         }
     )
 
@@ -87,6 +87,38 @@ def test_superseded_source_id_is_rejected():
     df.loc[0, "source_id"] = "imf_pcps"
     with pytest.raises(ValueError, match="approved or conditional.*imf_pcps.*superseded"):
         schema.validate_frame(df)
+
+
+def test_licence_id_must_match_registry_entry():
+    df = good_frame()
+    df.loc[0, "licence_id"] = "US-PD"
+    message = (
+        r"licence_id for source_id 'noaa_oni' must be 'LicenseRef-US-PD' as recorded in "
+        r"src/sources\.yaml; got \['LicenseRef-US-PD', 'US-PD'\]"
+    )
+    with pytest.raises(ValueError, match=message):
+        schema.validate_frame(df)
+
+
+def test_licence_id_is_checked_per_source():
+    df = good_frame()
+    df.loc[2, "licence_id"] = "LicenseRef-US-PD"
+    with pytest.raises(ValueError, match="source_id 'worldbank_pink_sheet' must be 'CC-BY-4.0'"):
+        schema.validate_frame(df)
+
+
+def test_registry_entry_without_licence_id_is_rejected(monkeypatch):
+    entries = {sid: dict(entry) for sid, entry in schema.registry().items()}
+    entries["noaa_oni"]["licence_id"] = None
+    monkeypatch.setattr(schema, "registry", lambda: entries)
+    with pytest.raises(ValueError, match="registry entry 'noaa_oni' has no licence_id"):
+        schema.validate_frame(good_frame())
+
+
+def test_registry_licence_ids_are_read_from_sources_yaml():
+    entries = schema.registry()
+    assert entries["noaa_oni"]["licence_id"] == "LicenseRef-US-PD"
+    assert entries["worldbank_pink_sheet"]["licence_id"] == "CC-BY-4.0"
 
 
 def test_null_string_column():

@@ -13,11 +13,22 @@
 #   id             stable snake_case key; a fetcher module must use the same name
 #   name           human-readable dataset name
 #   publisher      responsible organisation
-#   url            canonical landing page (deep links are verified in notes)
+#   url            canonical landing page
 #   licence        licence as stated by the publisher, or "unverified"
+#   licence_id     SPDX identifier where one exists (CC-BY-4.0); a LicenseRef-
+#                  identifier for stated custom terms (LicenseRef-US-PD for US
+#                  government work); null while the licence is unverified.
+#                  src/schema.validate_frame requires every frame's licence_id
+#                  to equal this value for its source_id.
+#   terms_url      the publisher's terms page where it was fetched and read;
+#                  null otherwise, with the page to verify named in notes
+#   deep_url       exact file URL(s) fetched, or the durable page from which
+#                  the current file link is resolved at run time; null when
+#                  nothing is fetched
+#   series         series carried into the tidy contract (data sources only)
 #   redistribution yes | conditional | no
 #   attribution    string to render wherever the data appears
-#   cadence        publication frequency
+#   cadence        publication frequency and revision behaviour
 #   status         approved | conditional | link-only | excluded | superseded | pending
 #   reason         one line of plain text stating why the status holds
 #   notes          caveats, verification tasks, decision rationale
@@ -25,39 +36,110 @@
 sources:
   # ---------------------------------------------------------------- approved
   - id: noaa_oni
-    name: Oceanic Niño Index (ONI)
+    name: Oceanic Niño Index (ONI) and Relative Oceanic Niño Index (RONI)
     publisher: NOAA Climate Prediction Center
-    url: https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php
+    url: https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/oni/v6/
     licence: US Government work, public domain
+    licence_id: LicenseRef-US-PD
+    terms_url: https://weather.gov/disclaimer.php
+    deep_url:
+      - https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt
+      - https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt
+    series: [ONI, RONI]
     redistribution: "yes"
-    attribution: "Source: NOAA Climate Prediction Center, Oceanic Niño Index (ONI)"
-    cadence: monthly
+    attribution: "Source: NOAA Climate Prediction Center, Oceanic Niño Index (ONI) and Relative Oceanic Niño Index (RONI)"
+    cadence: >-
+      monthly; the CPC table pages state they are updated by the 5th of
+      each month; values may change for up to two months after first
+      posting, so the latest seasons are estimates
     status: approved
     reason: US federal government work in the public domain.
     notes: >-
-      Forecast-stage ENSO indicator. Public domain as a work of the US
-      federal government; snapshots may be committed under data/ once the
-      fetcher is implemented.
+      Forecast-stage ENSO indicators. Both files carry the ERSSTv6 series:
+      rounded to one decimal they match the CPC table at the url above
+      (ONI) and the RONI table at
+      https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/,
+      and not the ERSSTv5 tables. Per NWS Public Information Statement
+      26-05 the RONI is CPC's official index for ENSO monitoring and
+      prediction. The earlier landing page ONI_v5.php now points to the v6
+      table. Attribution is customary rather than required; terms_url is
+      the NWS disclaimer linked from the CPC page footers, not fetched in
+      session A because the host is outside the permitted list. Snapshots
+      are committed under data/snapshots/noaa_oni/.
 
   - id: worldbank_pink_sheet
     name: Commodity Price Data (the Pink Sheet)
     publisher: World Bank, Prospects Group
     url: https://www.worldbank.org/en/research/commodity-markets
     licence: CC BY 4.0
+    licence_id: CC-BY-4.0
+    terms_url: https://www.worldbank.org/ext/en/legal/terms-conditions/datasets
+    deep_url: https://www.worldbank.org/en/research/commodity-markets
+    series:
+      - code: COFFEE_ARABIC
+        name: Coffee, Arabica
+        unit: "$/kg"
+      - code: COFFEE_ROBUS
+        name: Coffee, Robusta
+        unit: "$/kg"
+      - code: COCOA
+        name: Cocoa
+        unit: "$/kg"
+      - code: SUGAR_WLD
+        name: Sugar, world
+        unit: "$/kg"
+      - code: RICE_05
+        name: Rice, Thai 5%
+        unit: "$/mt"
     redistribution: "yes"
-    attribution: "Source: World Bank Commodity Price Data (the Pink Sheet), CC BY 4.0"
-    cadence: monthly
+    attribution: "The World Bank: Commodity Price Data (The Pink Sheet): World Bank Prospects Group"
+    cadence: >-
+      monthly, published in the first week of the month with data to the
+      end of the previous month
     status: approved
     reason: Published under CC BY 4.0 with attribution required.
     notes: >-
       Realised-impact stage, commodity prices. Supersedes IMF PCPS for this
-      tool. Direct workbook link to be confirmed when the fetcher is written.
+      tool. The monthly workbook CMO-Historical-Data-Monthly.xlsx is linked
+      from the durable page with a path segment that rotates per release,
+      so the fetcher resolves the current link on every run. The workbook
+      lists series by name and unit only (rows 5 and 6 of the sheet
+      Monthly Prices; names are matched after stripping whitespace); the
+      codes above are the World Bank series codes carried as series ids.
+      Terms fetched and read on 2026-09-07: CC BY 4.0 with the attribution
+      format "The World Bank: Dataset name: Data source (if known)", a
+      mandatory dispute resolution clause and third-party data exceptions.
+      Snapshots are committed under data/snapshots/worldbank_pink_sheet/.
+
+  - id: noaa_cpc_enso_impacts_schematic
+    name: Typical El Niño temperature and precipitation patterns (schematic)
+    publisher: NOAA Climate Prediction Center
+    url: https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml
+    licence: US Government work, public domain
+    licence_id: LicenseRef-US-PD
+    terms_url: http://www.weather.gov/disclaimer.php
+    deep_url: https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/warm.gif
+    redistribution: "yes"
+    attribution: "Source: NOAA Climate Prediction Center, typical El Niño temperature and precipitation patterns"
+    cadence: static; the image carries a Last-Modified date of 7 November 2012
+    status: approved
+    reason: NOAA CPC typical El Niño impacts schematic, US government work
+    notes: >-
+      Context layer: the CPC schematic of typical El Niño temperature and
+      precipitation patterns, shown or linked as an image. No fetcher and
+      no snapshot. Both URLs answered 200 on 2026-09-07; the image is
+      image/gif, 143255 bytes, and is embedded in the page. terms_url is
+      the NWS disclaimer linked from the page footer, not fetched in
+      session A because the host is outside the permitted list.
 
   - id: faostat
     name: FAOSTAT
     publisher: Food and Agriculture Organization of the United Nations (FAO)
     url: https://www.fao.org/faostat/
     licence: CC BY 4.0 (under the FAO database terms of use)
+    licence_id: CC-BY-4.0
+    terms_url: null
+    deep_url: null
     redistribution: "yes"
     attribution: "Source: FAO, FAOSTAT, CC BY 4.0"
     cadence: annual, with rolling domain updates
@@ -66,7 +148,8 @@ sources:
     notes: >-
       Realised-impact stage, food production and prices. FAO applies CC BY
       4.0 to FAOSTAT datasets under its database terms; confirm the exact
-      domain-level terms when a fetcher is written.
+      domain-level terms when a fetcher is written. terms_url to verify:
+      the FAO database terms of use page on fao.org.
 
   # ------------------------------------------------------------- conditional
   - id: fews_net
@@ -74,6 +157,9 @@ sources:
     publisher: Famine Early Warning Systems Network (USAID)
     url: https://fews.net/
     licence: custom attribution policy
+    licence_id: LicenseRef-FEWS-NET-terms
+    terms_url: null
+    deep_url: null
     redistribution: "conditional"
     attribution: "Source: FEWS NET"
     cadence: monthly outlooks, ad hoc alerts
@@ -84,12 +170,17 @@ sources:
       under the FEWS NET terms; confirm wording before use. Funding
       instability and reporting gaps during 2026 mean coverage may be
       incomplete; gaps must render as "not assessed", never as "no alert".
+      terms_url to verify: the FEWS NET terms of use and attribution policy
+      page on fews.net.
 
   - id: ocha_reliefweb
     name: ReliefWeb
     publisher: UN Office for the Coordination of Humanitarian Affairs (OCHA)
     url: https://reliefweb.int/
     licence: metadata and links reusable; partner content is third-party
+    licence_id: LicenseRef-ReliefWeb-terms
+    terms_url: null
+    deep_url: null
     redistribution: "conditional"
     attribution: "Source: OCHA ReliefWeb"
     cadence: continuous
@@ -97,13 +188,17 @@ sources:
     reason: Metadata and links are reusable; partner full text is third-party content.
     notes: >-
       Metadata and links only. Full-text partner content is third-party and
-      must not be stored or reproduced; link out instead.
+      must not be stored or reproduced; link out instead. terms_url to
+      verify: the ReliefWeb terms and conditions page on reliefweb.int.
 
   - id: ocha_cerf_anticipatory_action
     name: CERF anticipatory action activation reports
     publisher: UN Central Emergency Response Fund (OCHA)
     url: https://cerf.un.org/
     licence: verify per document
+    licence_id: LicenseRef-CERF-terms
+    terms_url: null
+    deep_url: null
     redistribution: "conditional"
     attribution: "Source: UN CERF anticipatory action framework documents"
     cadence: per activation
@@ -112,7 +207,8 @@ sources:
     notes: >-
       Anticipatory-action stage. Each activation report carries its own
       terms; verify before extracting figures. Record the document URL and
-      date alongside every value.
+      date alongside every value. terms_url to verify: the terms of use
+      page on cerf.un.org, then each document's own notice.
 
   # --------------------------------------------------------------- link-only
   - id: world_weather_attribution
@@ -120,6 +216,9 @@ sources:
     publisher: World Weather Attribution
     url: https://www.worldweatherattribution.org/
     licence: reported CC BY-NC-SA, unverified on the primary page
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "World Weather Attribution"
     cadence: per event
@@ -128,12 +227,17 @@ sources:
     notes: >-
       Cite and link. The NC-SA terms, if confirmed, are incompatible with
       redistribution from an MIT-licensed tool; no data is fetched.
+      terms_url to verify: the licence statement on
+      worldweatherattribution.org.
 
   - id: carbon_brief_attribution_map
     name: Carbon Brief attribution map
     publisher: Carbon Brief
     url: https://www.carbonbrief.org/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "Carbon Brief"
     cadence: rolling
@@ -141,7 +245,8 @@ sources:
     reason: Licence unverified, so citation and linking only.
     notes: >-
       Cite and link only until the licence is verified. Deep link to the
-      map article to be added once confirmed.
+      map article to be added once confirmed. terms_url to verify: the
+      Carbon Brief terms and copyright page on carbonbrief.org.
 
   # ---------------------------------------------------------------- excluded
   - id: emdat
@@ -149,6 +254,9 @@ sources:
     publisher: CRED, UCLouvain
     url: https://www.emdat.be/
     licence: prohibits redistribution and derivative databases
+    licence_id: LicenseRef-EM-DAT-terms
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: n/a
     cadence: continuous
@@ -157,31 +265,42 @@ sources:
     notes: >-
       Informs the accompanying paper only. Never fetched, stored, derived
       from, or referenced in this tool. tests/test_sources_gate.py fails on
-      any mention under src/ outside this file.
+      any mention under src/ outside this file. terms_url to verify: the
+      terms of use page on emdat.be.
 
   - id: munich_re_natcat
     name: Munich Re NatCatSERVICE
     publisher: Munich Re
     url: https://www.munichre.com/
     licence: proprietary
+    licence_id: LicenseRef-Munich-Re-terms
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: n/a
     cadence: annual
     status: excluded
     reason: Proprietary loss data with no redistribution right.
-    notes: Proprietary loss data; not used.
+    notes: >-
+      Proprietary loss data; not used. terms_url to verify: the legal
+      notice on munichre.com.
 
   - id: swiss_re_natcat
     name: Swiss Re Institute sigma natural catastrophe data
     publisher: Swiss Re
     url: https://www.swissre.com/
     licence: proprietary
+    licence_id: LicenseRef-Swiss-Re-terms
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: n/a
     cadence: annual
     status: excluded
     reason: Proprietary loss data with no redistribution right.
-    notes: Proprietary loss data; not used.
+    notes: >-
+      Proprietary loss data; not used. terms_url to verify: the terms of
+      use page on swissre.com.
 
   # -------------------------------------------------------------- superseded
   - id: imf_pcps
@@ -189,12 +308,18 @@ sources:
     publisher: International Monetary Fund
     url: https://www.imf.org/
     licence: IMF terms of use
+    licence_id: LicenseRef-IMF-terms
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: n/a
     cadence: monthly
     status: superseded
     reason: duplicates World Bank Pink Sheet under more restrictive terms
-    notes: Editorial choice, not a licence bar; the Pink Sheet covers the same series.
+    notes: >-
+      Editorial choice, not a licence bar; the Pink Sheet covers the same
+      series. terms_url to verify: the IMF copyright and usage page on
+      imf.org.
 
   # ----------------------------------------------------------------- pending
   - id: idmc
@@ -202,42 +327,63 @@ sources:
     publisher: Internal Displacement Monitoring Centre
     url: https://www.internal-displacement.org/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "IDMC"
     cadence: annual, with event-level updates
     status: pending
     reason: Licence check outstanding.
-    notes: Licence check outstanding; realised-impact stage candidate (displacement).
+    notes: >-
+      Licence check outstanding; realised-impact stage candidate
+      (displacement). terms_url to verify: the terms of use page on
+      internal-displacement.org.
 
   - id: undrr_desinventar
     name: DesInventar Sendai
     publisher: UN Office for Disaster Risk Reduction (UNDRR)
     url: https://www.desinventar.net/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "UNDRR DesInventar"
     cadence: national, irregular
     status: pending
     reason: Licence check outstanding; national databases vary in terms.
-    notes: Licence check outstanding; national loss databases vary in terms.
+    notes: >-
+      Licence check outstanding; national loss databases vary in terms.
+      terms_url to verify: the terms page on desinventar.net and each
+      national database's notice.
 
   - id: gdacs
     name: Global Disaster Alert and Coordination System (GDACS)
     publisher: European Commission JRC and OCHA
     url: https://www.gdacs.org/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "GDACS"
     cadence: continuous
     status: pending
     reason: Licence check outstanding.
-    notes: Licence check outstanding; forecast and alert stage candidate.
+    notes: >-
+      Licence check outstanding; forecast and alert stage candidate.
+      terms_url to verify: the terms of use or disclaimer page on
+      gdacs.org.
 
   - id: ifrc_go
     name: IFRC GO platform
     publisher: International Federation of Red Cross and Red Crescent Societies
     url: https://go.ifrc.org/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "IFRC GO"
     cadence: continuous
@@ -245,13 +391,17 @@ sources:
     reason: Licence check outstanding.
     notes: >-
       Licence check outstanding; anticipatory-action stage candidate
-      (early action protocols and DREF activations).
+      (early action protocols and DREF activations). terms_url to verify:
+      the terms of use page on go.ifrc.org.
 
   - id: panama_canal_authority
     name: Panama Canal Authority operational statistics
     publisher: Autoridad del Canal de Panamá
     url: https://pancanal.com/
     licence: unverified
+    licence_id: null
+    terms_url: null
+    deep_url: null
     redistribution: "no"
     attribution: "Panama Canal Authority"
     cadence: monthly
@@ -259,4 +409,5 @@ sources:
     reason: Licence check outstanding.
     notes: >-
       Licence check outstanding; realised-impact stage candidate (draught
-      restrictions and transits under drought).
+      restrictions and transits under drought). terms_url to verify: the
+      legal notice on pancanal.com.

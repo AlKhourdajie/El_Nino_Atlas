@@ -23,13 +23,13 @@ def oni_frame(values: list[float] | None = None) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "source_id": "noaa_oni",
-            "series_id": "oni",
-            "region": "nino34",
+            "series_id": "ONI",
+            "region": "NINO3.4",
             "date": ["1997-12-01", "1998-01-01", "1998-02-01"][: len(values)],
             "value": [float(v) for v in values],
             "unit": "degC",
             "retrieved_at": RETRIEVED_AT,
-            "licence_id": "US-PD",
+            "licence_id": "LicenseRef-US-PD",
         }
     )
 
@@ -40,7 +40,7 @@ def metadata(frame: pd.DataFrame, source_id: str = "noaa_oni", **overrides) -> d
         "retrieved_at": RETRIEVED_AT,
         "source_url": "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt",
         "raw_sha256": "0" * 64,
-        "licence_id": "US-PD",
+        "licence_id": "LicenseRef-US-PD",
         "attribution": "Source: NOAA Climate Prediction Center, Oceanic Niño Index (ONI)",
         "row_count": len(frame),
         "series_ids": sorted(set(frame["series_id"])),
@@ -61,7 +61,7 @@ def test_round_trip(snapshot_root):
     raw = csv_path.read_bytes()
     assert b"\r\n" not in raw
     assert raw.decode("utf-8").splitlines()[0] == ",".join(COLUMNS)
-    assert raw.decode("utf-8").splitlines()[1].startswith("noaa_oni,oni,nino34,1997-12-01,2.4,")
+    assert raw.decode("utf-8").splitlines()[1].startswith("noaa_oni,ONI,NINO3.4,1997-12-01,2.4,")
 
     loaded = data_access.load_frame("noaa_oni")
     assert list(loaded.columns) == list(COLUMNS)
@@ -108,7 +108,9 @@ def test_missing_snapshot_raises():
 def test_non_approved_source_refused(snapshot_root):
     # fews_net is fetchable (conditional) so the frame itself is valid; the
     # snapshot rule is stricter and must refuse it.
-    frame = oni_frame().assign(source_id="fews_net", series_id="ipc_phase", licence_id="custom")
+    frame = oni_frame().assign(
+        source_id="fews_net", series_id="ipc_phase", licence_id="LicenseRef-FEWS-NET-terms"
+    )
     with pytest.raises(ValueError, match="status 'approved' and redistribution 'yes'"):
         data_access.write_snapshot("fews_net", frame, metadata(frame, source_id="fews_net"))
     assert not (snapshot_root / "fews_net").exists()
@@ -143,7 +145,7 @@ def test_invalid_frame_refused(snapshot_root):
         ({"source_id": "worldbank_pink_sheet"}, "does not match 'noaa_oni'"),
         ({"retrieved_at": "2026-09-05T17:00:00"}, "UTC ISO 8601"),
         ({"row_count": 2}, "does not match 3 rows"),
-        ({"series_ids": ["oni", "extra"]}, "do not match"),
+        ({"series_ids": ["ONI", "extra"]}, "do not match"),
     ],
 )
 def test_bad_metadata_refused(snapshot_root, override, message):
