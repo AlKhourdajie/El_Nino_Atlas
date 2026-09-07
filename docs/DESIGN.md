@@ -82,10 +82,12 @@ Status meanings:
 
 ### Panels on the page
 
-The page runs along the spine in this order. Every data panel module
-exposes `build_figure(...)` and `explainer()`; the schematic module
-exposes `build_image_panel()`. A panel whose snapshot is missing keeps
-its explainer and shows the notice "Data snapshot not yet available" in
+The page runs the event panel, the realised-impact panel, the
+anticipatory-action panel and the schematic in that order, and the
+table lists the panels by stage. Every data panel module exposes
+`build_figure(...)` and `explainer()`; the schematic module exposes
+`build_image_panel()`. A panel whose snapshot is missing keeps its
+explainer and shows the notice "Data snapshot not yet available" in
 place of its figure.
 
 | Panel | Stage | Module | Data | State in 0.2.0 |

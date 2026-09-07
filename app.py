@@ -3,10 +3,10 @@
 The app is built at import time so that ``gunicorn app:server`` works
 unchanged; ``run.py`` imports the same object for local serving.
 
-``build_page`` assembles the page along the forecast, action, impact
-spine: the opening line with the latest-reading line beneath it, the
-About block, the index panel, the activation panel, the commodity
-panel, the teleconnection schematic panel and the footer. The index and
+``build_page`` assembles the page: the title with the maintainer line
+and the opening line beneath it, the latest-reading line, the About
+block, the index panel, the commodity panel, the activation panel, the
+teleconnection schematic panel and the footer. The index and
 commodity panels read their snapshots through ``src.data_access``. A
 missing snapshot, the ``FileNotFoundError`` that ``load_frame`` raises,
 renders the panel's explainer with a visible notice and omits the
@@ -101,8 +101,8 @@ def build_page(image_src: str = teleconnections.IMAGE_URL_PATH) -> dbc.Container
         layout.opening(reading),
         layout.about(),
         _index_panel(index, events),
-        _activation_panel(entries),
         _commodity_panel(prices, events),
+        _activation_panel(entries),
         teleconnections.build_image_panel(image_src),
         layout.footer(),
     )

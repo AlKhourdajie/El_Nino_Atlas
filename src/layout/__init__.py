@@ -60,8 +60,17 @@ def section(title: str, *children, id: str | None = None) -> html.Section:
     return html.Section([html.H2(title, className="h5 mt-4 mb-2"), *children], **kwargs)
 
 
+def maintainer_line() -> html.P:
+    """The maintainer line under the title, with the name linked to the personal site."""
+    return html.P(
+        ["Maintained by ", html.A(MAINTAINER, href=MAINTAINER_URL), f", {AFFILIATION}."],
+        id="maintainer",
+        className="text-muted mb-2",
+    )
+
+
 def opening(reading: str | None = None) -> html.Header:
-    """The page title, the opening line and, when given, the latest-reading line.
+    """The title, the maintainer line, the opening line and, when given, the reading line.
 
     ``reading`` is the one-line summary of the latest season that
     ``src.layers.enso_index.latest_reading`` builds. It is ``None`` when
@@ -69,6 +78,7 @@ def opening(reading: str | None = None) -> html.Header:
     """
     children: list = [
         html.H1(TITLE, className="mt-4"),
+        maintainer_line(),
         html.P(OPENING, className="lead", id="opening"),
     ]
     if reading is not None:

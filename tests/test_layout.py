@@ -49,6 +49,11 @@ def design_captions() -> list[str]:
     return design_blockquotes("## Caption guardrails")
 
 
+def line_text(paragraph: html.P) -> str:
+    """The text of a page line, each link flattened to its text."""
+    return "".join(c.children if isinstance(c, html.A) else c for c in paragraph.children)
+
+
 def test_captions_are_verbatim_from_the_design_notes():
     assert list(captions.CAPTIONS) == design_captions()
     assert captions.CAPTIONS == (
@@ -73,12 +78,25 @@ def test_opening_line_is_verbatim():
     header = layout.opening()
     (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
     assert lead.children == layout.OPENING
-    assert component_ids(header) == ["header", "opening"]
+    assert component_ids(header) == ["header", "maintainer", "opening"]
+
+
+def test_maintainer_line_sits_under_the_title_before_the_opening_line():
+    title, maintainer, lead = layout.opening().children
+    assert isinstance(title, html.H1) and title.children == layout.TITLE
+    assert isinstance(maintainer, html.P) and maintainer.id == "maintainer"
+    assert line_text(maintainer) == "Maintained by Alaa Al Khourdajie, Imperial College London."
+    (link,) = [c for c in walk(maintainer) if isinstance(c, html.A)]
+    assert (link.children, link.href) == (
+        "Alaa Al Khourdajie",
+        "https://sites.google.com/site/akhourdajie/",
+    )
+    assert lead.id == "opening"
 
 
 def test_opening_carries_the_reading_line_directly_beneath_the_lead():
     header = layout.opening(READING)
-    assert component_ids(header) == ["header", "opening", "latest-reading"]
+    assert component_ids(header) == ["header", "maintainer", "opening", "latest-reading"]
     (line,) = [c for c in walk(header) if getattr(c, "id", None) == "latest-reading"]
     assert isinstance(line, html.P) and line.children == READING
     assert "latest-reading" not in component_ids(layout.opening(None))
@@ -97,6 +115,15 @@ def test_about_block_opens_the_readme_case_for_the_atlas():
     text = " ".join(layout.ABOUT)
     assert readme_paragraph("## Why an event-resolved atlas").startswith(text + " ")
     assert layout.about().id == "about"
+
+
+def test_readme_order_paragraph_states_the_page_order():
+    assert readme_paragraph("## How to read the atlas") == (
+        "**Order.** The page opens with the state of El Niño in the Pacific, followed by the "
+        "realised impacts that public data can measure, the anticipatory action taken on "
+        "forecasts, and a draft map of where an effect is expected. Each panel carries its "
+        "stage label."
+    )
 
 
 def test_readme_names_the_maintainer_under_the_live_site_line():
@@ -161,11 +188,6 @@ def test_container_is_empty_with_its_id():
     assert empty.id == "panel-activations" and not empty.children
 
 
-def line_text(paragraph: html.P) -> str:
-    """The text of a footer line, each link flattened to its text."""
-    return "".join(c.children if isinstance(c, html.A) else c for c in paragraph.children)
-
-
 def test_footer_states_maintainer_licences_and_citation():
     footer = layout.footer()
     assert footer.id == "footer"
@@ -189,7 +211,8 @@ def test_footer_states_maintainer_licences_and_citation():
 
 def test_page_copy_follows_the_rules():
     footer_lines = [line_text(p) for p in layout.footer().children]
-    for text in (layout.OPENING, *layout.ABOUT, *footer_lines):
+    lines = (layout.OPENING, line_text(layout.maintainer_line()), *layout.ABOUT, *footer_lines)
+    for text in lines:
         assert "—" not in text
 
 

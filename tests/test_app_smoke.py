@@ -17,11 +17,12 @@ from tests.support import RETRIEVED_AT, component_ids, index_frame, price_frame,
 from tests.test_activations import example_entry, no_activation_entry
 
 ORDER = [
+    "maintainer",
     "opening",
     "about",
     "panel-index",
-    "panel-activations",
     "panel-commodities",
+    "panel-activations",
     "panel-teleconnections",
     "footer",
 ]
@@ -61,7 +62,7 @@ def install_register(monkeypatch, entries: list[dict]) -> None:
     monkeypatch.setattr(activations, "load_activations", lambda: entries)
 
 
-def assert_in_spine_order(page) -> None:
+def assert_in_page_order(page) -> None:
     ids = component_ids(page)
     positions = [ids.index(id) for id in ORDER]
     assert positions == sorted(positions)
@@ -86,7 +87,7 @@ def reading_line(page) -> html.P | None:
 # five seasons, so it is not provisional.
 READING = "Latest three-month season (June to August 2026): RONI +1.20 °C, ONI +1.40 °C."
 SCHEMATIC = "Where El Niño usually matters: draft schematic"
-HEADINGS = ["About", "The event", "Anticipatory action", "Realised impact", SCHEMATIC]
+HEADINGS = ["About", "The event", "Realised impact", "Anticipatory action", SCHEMATIC]
 
 
 def activation_rows(page) -> list[html.Tr]:
@@ -133,7 +134,7 @@ def test_app_imports_and_layout_builds():
     import app as app_module
 
     assert app_module.server is not None
-    assert_in_spine_order(app_module.app.layout)
+    assert_in_page_order(app_module.app.layout)
 
 
 def test_page_with_both_snapshots(monkeypatch):
@@ -143,7 +144,7 @@ def test_page_with_both_snapshots(monkeypatch):
     entries = [example_entry(), no_activation_entry()]
     install_register(monkeypatch, entries)
     page = app_module.build_page()
-    assert_in_spine_order(page)
+    assert_in_page_order(page)
     rendered = str(page)
     assert layout.OPENING in rendered
     assert " ".join(layout.ABOUT) in rendered
@@ -202,7 +203,7 @@ def test_page_without_snapshots(monkeypatch):
     install_snapshots(monkeypatch, {})
     install_register(monkeypatch, [])
     page = app_module.build_page()
-    assert_in_spine_order(page)
+    assert_in_page_order(page)
     rendered = str(page)
     assert rendered.count(layout.UNAVAILABLE_NOTICE) == 2
     assert f"retrieved {RETRIEVED_AT}" not in rendered

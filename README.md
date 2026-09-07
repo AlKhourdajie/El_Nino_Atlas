@@ -16,7 +16,7 @@ Hazard catalogues, forecast dashboards and response dashboards each cover one st
 
 ## How to read the atlas
 
-**Order.** The page runs in the order of the event: the state of El Niño in the Pacific, the anticipatory action taken on forecasts, and the realised impacts that public data can measure. Panels are added in that sequence as the event unfolds.
+**Order.** The page opens with the state of El Niño in the Pacific, followed by the realised impacts that public data can measure, the anticipatory action taken on forecasts, and a draft map of where an effect is expected. Each panel carries its stage label.
 
 **Three states.** Where a panel shows regions, each region is in one of three states: something recorded; assessed with nothing recorded; or not assessed. The third state has its own grey, and a region that a source did not cover is shown in it, because a "nothing recorded" label would attribute to the source an assessment it never made.
 
