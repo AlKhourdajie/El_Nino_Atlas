@@ -238,8 +238,11 @@ def add_event_shading(
 
     Each phase gets one legend entry. ``until`` is the exclusive end of
     the shading for an event whose ``end`` is ``None``. A provisional
-    event has a dashed outline and the label "provisional". An event with
-    a phase outside ``theme.PHASE_COLOURS`` raises ``ValueError``.
+    event has a dashed outline and the label "provisional", anchored to
+    the top right corner of its shading with the text running left, so
+    that a run ending at the axis edge keeps its label inside the plot
+    area on a narrow screen. An event with a phase outside
+    ``theme.PHASE_COLOURS`` raises ``ValueError``.
     """
     shown: set[str] = set()
     for event in events:
@@ -264,7 +267,9 @@ def add_event_shading(
             shape["line"] = {"color": colour, "width": 1.5, "dash": "dash"}
             shape["label"] = {
                 "text": "provisional",
-                "textposition": "top center",
+                "textposition": "top right",
+                "xanchor": "right",
+                "yanchor": "top",
                 "font": {"size": 11, "color": colour},
             }
         fig.add_vrect(**shape)

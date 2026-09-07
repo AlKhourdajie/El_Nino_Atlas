@@ -119,6 +119,9 @@ def test_provisional_event_has_dashed_outline_and_label(frame, events):
     assert shape.line.dash == "dash"
     assert shape.line.width > 0
     assert shape.label.text == "provisional"
+    # The run ends at the axis edge, so the label hangs inside its top right corner.
+    assert shape.label.textposition == "top right"
+    assert (shape.label.xanchor, shape.label.yanchor) == ("right", "top")
 
 
 def test_unknown_phase_raises(frame, events):
