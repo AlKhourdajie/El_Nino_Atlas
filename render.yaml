@@ -12,7 +12,7 @@ services:
     runtime: python
     plan: free
     branch: main
-    autoDeploy: false
+    autoDeploy: true
     # Build with uv from the committed lock file; fall back to pip if uv
     # cannot be installed on the build image.
     buildCommand: >-
