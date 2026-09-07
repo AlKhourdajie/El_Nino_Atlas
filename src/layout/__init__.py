@@ -68,9 +68,17 @@ def about() -> html.Section:
     return section("About", html.P(" ".join(ABOUT), className="mb-0"), id="about")
 
 
-def graph(figure: go.Figure, *, id: str | None = None) -> dcc.Graph:
-    """A panel figure with the touch-screen configuration."""
-    kwargs = {"id": id} if id else {}
+def graph(figure: go.Figure, *, id: str | None = None, height: int | None = None) -> dcc.Graph:
+    """A panel figure with the touch-screen configuration.
+
+    Dash gives the graph container the height of its column. A figure
+    that shares its column with other content, such as the activation
+    map beneath the legend, needs ``height`` in pixels, or the figure
+    takes the whole column and pushes the rest of the content out of it.
+    """
+    kwargs: dict = {"id": id} if id else {}
+    if height is not None:
+        kwargs["style"] = {"height": f"{height}px"}
     return dcc.Graph(figure=figure, config=GRAPH_CONFIG, **kwargs)
 
 
@@ -86,15 +94,18 @@ def composite_panel(
     *,
     id: str,
     retrieved_at: str | None = None,
+    beneath: tuple = (),
 ) -> html.Section:
     """A panel whose figure column holds ``column``, the components the caller assembled.
 
-    The activation panel stacks the three-state legend, the map and the
-    entry table there. ``retrieved_at`` is omitted when the content is not
-    a snapshot.
+    The activation panel stacks the three-state legend and the map there
+    and passes its entry table as ``beneath``: components placed after
+    the row at the full width of the page, where a wide table keeps its
+    rows short. ``retrieved_at`` is omitted when the content is not a
+    snapshot.
     """
     row = _panel_row(column, render_explainer(explainer, retrieved_at))
-    return section(stage, row, id=id)
+    return section(stage, row, *beneath, id=id)
 
 
 def panel(

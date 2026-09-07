@@ -131,6 +131,16 @@ def test_composite_panel_holds_the_callers_column_beside_the_explainer():
     assert "retrieved 2026-09-07" in str(stamped)
 
 
+def test_composite_panel_places_beneath_components_after_the_row_at_full_width():
+    table = html.Table(id="wide")
+    section = layout.composite_panel(
+        "Stage", EXPLAINER, [html.Div(id="first")], id="p", beneath=(table,)
+    )
+    (row,) = [c for c in section.children if isinstance(c, dbc.Row)]
+    assert "first" in component_ids(row) and "wide" not in component_ids(row)
+    assert section.children[-1] is table
+
+
 def test_container_is_empty_with_its_id():
     empty = layout.container("panel-activations")
     assert empty.id == "panel-activations" and not empty.children
@@ -159,8 +169,10 @@ def test_graph_config_suits_touch_screens():
     }
     assert layout.graph(go.Figure()).config == layout.GRAPH_CONFIG
     assert getattr(layout.graph(go.Figure()), "id", None) is None
-    named = layout.graph(go.Figure(), id="activations-map")
+    assert getattr(layout.graph(go.Figure()), "style", None) is None
+    named = layout.graph(go.Figure(), id="activations-map", height=420)
     assert named.id == "activations-map" and named.config == layout.GRAPH_CONFIG
+    assert named.style == {"height": "420px"}
 
 
 def test_every_column_fills_a_narrow_screen():

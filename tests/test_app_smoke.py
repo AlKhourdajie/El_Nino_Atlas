@@ -110,6 +110,12 @@ def assert_activation_panel(page, entries: list[dict]) -> None:
         assert f"legend-{state}" in ids
     (graph,) = [c for c in walk(section) if isinstance(c, dcc.Graph)]
     assert graph.id == "activations-map" and graph.config == layout.GRAPH_CONFIG
+    # A fixed height, or Dash sizes the map to its column; the table sits
+    # beneath the row at full width rather than inside the map's column.
+    assert graph.style == {"height": "420px"}
+    (row,) = [c for c in section.children if isinstance(c, dbc.Row)]
+    assert "activations-table" not in component_ids(row)
+    assert section.children[-1].id == "activations-table"
     choropleth = next(t for t in graph.figure.data if t.type == "choropleth")
     states = dict(zip(choropleth.locations, choropleth.z, strict=True))
     for entry in entries:
