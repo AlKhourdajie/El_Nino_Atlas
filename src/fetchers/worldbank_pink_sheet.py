@@ -42,15 +42,17 @@ docs/DESIGN.md.
 
 from __future__ import annotations
 
+import html
 import io
 import re
 from collections.abc import Iterable
+from urllib.parse import urljoin, urlparse
 
 import pandas as pd
 from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
-from src.fetchers import utc_now_iso
+from src.fetchers import Fetched, download, utc_now_iso
 from src.schema import COLUMNS, registry, validate_frame
 
 SOURCE_ID = "worldbank_pink_sheet"
@@ -58,6 +60,8 @@ REGION = "global"
 SHEET_NAME = "Monthly Prices"
 WORKBOOK_NAME = "CMO-Historical-Data-Monthly.xlsx"
 DURABLE_URL = "https://www.worldbank.org/en/research/commodity-markets"
+ALLOWED_HOSTS = frozenset({"www.worldbank.org", "thedocs.worldbank.org"})
+_HREF_RE = re.compile(r'href="([^"]+)"')
 DEFAULT_SUBSET: tuple[str, ...] = (
     "COFFEE_ARABIC",
     "COFFEE_ROBUS",
@@ -213,6 +217,48 @@ def parse_pink_sheet(
     return validate_frame(pd.concat(frames, ignore_index=True))
 
 
-def fetch() -> None:
-    """Download the Pink Sheet workbook. Not yet implemented."""
-    raise NotImplementedError("worldbank_pink_sheet live fetch arrives with run.py update")
+def resolve_workbook_url(page_html: str) -> str:
+    """The current link to the monthly workbook on the durable page.
+
+    The page links ``CMO-Historical-Data-Monthly.xlsx`` under a path
+    segment that changes per release. Raises when no link matches, when
+    several different links match, or when the link leaves the World
+    Bank hosts.
+    """
+    candidates = set()
+    for href in _HREF_RE.findall(page_html):
+        url = urljoin(DURABLE_URL, html.unescape(href))
+        if urlparse(url).path.endswith("/" + WORKBOOK_NAME):
+            candidates.add(url)
+    if not candidates:
+        raise ValueError(f"no link to {WORKBOOK_NAME} found on {DURABLE_URL}")
+    if len(candidates) > 1:
+        raise ValueError(
+            f"{len(candidates)} different links to {WORKBOOK_NAME} on {DURABLE_URL}: "
+            f"{sorted(candidates)}"
+        )
+    (url,) = candidates
+    host = urlparse(url).hostname
+    if host not in ALLOWED_HOSTS:
+        raise ValueError(
+            f"the {WORKBOOK_NAME} link points at {host!r}, outside {sorted(ALLOWED_HOSTS)}"
+        )
+    return url
+
+
+def fetch() -> tuple[Fetched, ...]:
+    """Resolve the current workbook link from the durable page and download it."""
+    page = download(DURABLE_URL, ALLOWED_HOSTS)
+    url = resolve_workbook_url(page.content.decode("utf-8"))
+    workbook = download(url, ALLOWED_HOSTS)
+    if not workbook.content.startswith(b"PK"):
+        raise ValueError(f"{url} did not return an xlsx workbook (no zip signature)")
+    return (workbook,)
+
+
+def parse(fetched: tuple[Fetched, ...]) -> pd.DataFrame:
+    """Parse the workbook from ``fetch`` for the default series."""
+    if len(fetched) != 1:
+        raise ValueError(f"expected exactly one fetched workbook, got {len(fetched)}")
+    (workbook,) = fetched
+    return parse_pink_sheet(workbook.content, retrieved_at=workbook.retrieved_at)

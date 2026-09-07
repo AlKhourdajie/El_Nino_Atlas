@@ -55,7 +55,7 @@ import re
 
 import pandas as pd
 
-from src.fetchers import utc_now_iso
+from src.fetchers import Fetched, download, utc_now_iso
 from src.schema import COLUMNS, registry, validate_frame
 
 SOURCE_ID = "noaa_oni"
@@ -63,6 +63,7 @@ REGION = "NINO3.4"
 UNIT = "degC"
 ONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
 RONI_URL = "https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt"
+ALLOWED_HOSTS = frozenset({"www.cpc.ncep.noaa.gov", "origin.cpc.ncep.noaa.gov"})
 
 # Season label -> centre month; the table year is the centre month's year.
 CENTRE_MONTH = {
@@ -163,6 +164,22 @@ def parse_roni(text: str, retrieved_at: str | None = None) -> pd.DataFrame:
     return _parse_cpc_table(text, "RONI", RONI_HEADER, retrieved_at)
 
 
-def fetch() -> None:
-    """Download the ONI and RONI tables. Not yet implemented."""
-    raise NotImplementedError("noaa_oni live fetch arrives with run.py update")
+def fetch() -> tuple[Fetched, ...]:
+    """Download ``oni.ascii.txt`` and ``RONI.ascii.txt`` from the CPC data directory."""
+    return (download(ONI_URL, ALLOWED_HOSTS), download(RONI_URL, ALLOWED_HOSTS))
+
+
+def parse(fetched: tuple[Fetched, ...]) -> pd.DataFrame:
+    """Parse the two files from ``fetch`` into one frame with series ONI and RONI."""
+    urls = [item.url for item in fetched]
+    if urls != [ONI_URL, RONI_URL]:
+        raise ValueError(f"expected the ONI and RONI files in that order, got {urls}")
+    oni, roni = fetched
+    frame = pd.concat(
+        [
+            parse_oni(oni.content.decode("ascii"), oni.retrieved_at),
+            parse_roni(roni.content.decode("ascii"), roni.retrieved_at),
+        ],
+        ignore_index=True,
+    )
+    return validate_frame(frame)

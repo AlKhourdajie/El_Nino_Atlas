@@ -174,10 +174,3 @@ def test_not_assessed_never_shares_no_alert_colour():
     rendered = str(legend())
     for state in ("alert", "no_alert", "not_assessed"):
         assert f"legend-{state}" in rendered
-
-
-def test_update_command_reports_no_fetchers(capsys):
-    import run
-
-    assert run.main(["update"]) == 0
-    assert capsys.readouterr().out.strip() == "no fetchers registered"
