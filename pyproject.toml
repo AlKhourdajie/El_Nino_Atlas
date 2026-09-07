@@ -15,6 +15,7 @@ dependencies = [
     "gunicorn>=26.2.0",
     "requests>=2.34.2",
     "openpyxl>=3.1.5",
+    "pycountry>=26.2.16",
 ]
 
 [build-system]
