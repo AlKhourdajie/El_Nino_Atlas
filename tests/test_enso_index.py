@@ -67,10 +67,23 @@ def test_values_are_in_degrees_c(figure):
         enso_index.build_figure(index_frame(unit="K"), [])
 
 
-def test_hover_names_the_season(figure):
+def test_hover_names_the_season_and_the_phase(figure):
     roni = next(trace for trace in figure.data if trace.name == "RONI")
-    assert roni.customdata[0] == "DJF 1990"
-    assert roni.customdata[-1] == "JJA 2026"
+    assert list(roni.customdata[0]) == ["DJF 1990", ""]
+    assert list(roni.customdata[-1]) == ["JJA 2026", theme.PHASE_LABELS["el_nino"]]
+    # 1997-98: MJJ 1997 is inside the synthetic El Niño, MAM 1997 is before it.
+    by_season = {row[0]: row[1] for row in roni.customdata}
+    assert by_season["MJJ 1997"] == theme.PHASE_LABELS["el_nino"]
+    assert by_season["MAM 1997"] == ""
+    assert by_season["JAS 2010"] == theme.PHASE_LABELS["la_nina"]
+    assert "%{customdata[1]}" in roni.hovertemplate
+
+
+def test_season_phases_mark_a_provisional_run(events):
+    provisional = replace(events[-1], provisional=True)
+    phases = enso_index.season_phases([provisional])
+    assert phases["JJA 2026"] == f"{theme.PHASE_LABELS['el_nino']}, provisional"
+    assert "MAM 1997" not in phases
 
 
 def test_missing_series_raises(frame):
@@ -93,8 +106,13 @@ def test_events_are_shaded_over_their_seasons(figure, events):
         assert shape.fillcolor == theme.rgba(
             theme.PHASE_COLOURS[event.phase], theme.PHASE_OPACITY[event.phase]
         )
-        assert shape.line.width == 0
         assert shape.layer == "below"
+        if event.phase == "la_nina":
+            # A La Niña band differs from an El Niño band in more than hue.
+            assert shape.line.dash == theme.PHASE_OUTLINE["la_nina"] == "dot"
+            assert shape.line.color == theme.BAND_OUTLINE
+        else:
+            assert shape.line.width == 0
 
 
 def test_each_phase_has_one_legend_entry(figure):
@@ -122,6 +140,10 @@ def test_provisional_event_has_dashed_outline_and_label(frame, events):
     # The run ends at the axis edge, so the label hangs inside its top right corner.
     assert shape.label.textposition == "top right"
     assert (shape.label.xanchor, shape.label.yanchor) == ("right", "top")
+    # Outline and label use the muted ink, which meets the contrast minimum;
+    # the phase hue appears only as the tint.
+    assert shape.line.color == theme.BAND_OUTLINE
+    assert shape.label.font.color == theme.BAND_OUTLINE
 
 
 def test_unknown_phase_raises(frame, events):
@@ -140,14 +162,31 @@ def test_threshold_lines_at_half_a_degree(figure):
     assert sorted(shape.y0 for shape in lines) == [-0.5, 0.5]
 
 
-def test_range_buttons_and_default_window(figure):
-    buttons = figure.layout.xaxis.rangeselector.buttons
-    assert [b.label for b in buttons] == ["From 1950", "30 years", "5 years"]
-    assert buttons[0].step == "all"
-    assert (buttons[1].count, buttons[1].step, buttons[1].stepmode) == (30, "year", "backward")
-    assert (buttons[2].count, buttons[2].step, buttons[2].stepmode) == (5, "year", "backward")
+def test_range_presets_and_default_window(figure):
+    # The presets live in the shared time-range bar, not in the figure.
+    buttons = enso_index.RANGE_BUTTONS
+    assert [b["label"] for b in buttons] == ["From 1950", "30 years", "5 years"]
+    assert buttons[0]["step"] == "all"
+    assert (buttons[1]["count"], buttons[1]["step"], buttons[1]["stepmode"]) == (
+        30,
+        "year",
+        "backward",
+    )
+    assert (buttons[2]["count"], buttons[2]["step"], buttons[2]["stepmode"]) == (
+        5,
+        "year",
+        "backward",
+    )
+    assert not figure.layout.xaxis.rangeselector.buttons
     assert figure.layout.xaxis.range == ("1996-09-01", X_END)
     assert figure.layout.xaxis.type == "date"
+
+
+def test_legend_click_isolates_a_series(figure):
+    template = figure.layout.template.layout
+    assert template.legend.itemclick == "toggleothers"
+    assert template.legend.itemdoubleclick == "toggle"
+    assert figure.layout.hovermode == "x unified"
 
 
 def test_figure_sets_no_width(figure):
@@ -160,6 +199,9 @@ def test_figure_layout_suits_narrow_screens(figure):
     assert figure.layout.legend.y < 0
     margin = figure.layout.margin
     assert max(margin.l, margin.r, margin.t, margin.b) <= 48
+    # Dash redraws the figure after each interaction; the revision keeps the
+    # reader's zoom and legend choices across those redraws.
+    assert figure.layout.uirevision == theme.UI_REVISION
 
 
 def test_explainer_contract():

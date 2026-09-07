@@ -152,23 +152,43 @@ def test_layout_is_static_natural_earth():
     assert fig.layout.geo.projection.type == "natural earth"
     assert choropleth(fig).showscale is False
     assert GRAPH_CONFIG["scrollZoom"] is False
+    assert GRAPH_CONFIG["displayModeBar"] is False
+    assert GRAPH_CONFIG["showSendToCloud"] is False
+    assert fig.layout.height == theme.MAP_HEIGHT
+    assert fig.layout.uirevision == theme.UI_REVISION
 
 
 def test_legend_lists_the_three_state_labels_beneath_the_map():
     fig = build_figure(entries())
     traces = legend_traces(fig)
     assert len(traces) == len(STATE_ORDER)
-    by_colour = {t.marker.color: t.name for t in traces}
+    by_name = {t.name: t for t in traces}
     for state in STATE_ORDER:
         # Short labels keep the horizontal legend inside a narrow screen; the
         # definitions stay in the hover text.
-        assert by_colour[theme.STATE_COLOURS[state]] == layer.STATE_LABELS[state]
+        trace = by_name[layer.STATE_LABELS[state]]
+        assert trace.marker.symbol == theme.STATE_MARKER_SYMBOLS[state]
     assert all(t.showlegend is True and t.hoverinfo == "skip" for t in traces)
     assert fig.layout.legend.orientation == "h"
     assert fig.layout.legend.yanchor == "top" and fig.layout.legend.y <= 0
     assert fig.layout.legend.font.size == layer.LEGEND_FONT_SIZE
     hover = dict(zip(choropleth(fig).locations, choropleth(fig).text, strict=True))
     assert layer.STATE_DEFINITIONS[NOT_TRACKED] in hover["HND"]
+
+
+def test_entries_carry_centroid_markers_in_their_mark_style():
+    fig = build_figure(entries())
+    by_name = {t.name: t for t in legend_traces(fig)}
+    activated = by_name[layer.STATE_LABELS["alert"]]
+    assert list(activated.locations) == ["GTM"]
+    assert activated.marker.symbol == "circle"
+    assert activated.marker.color == theme.STATE_COLOURS["alert"]
+    framework = by_name[layer.STATE_LABELS["no_alert"]]
+    assert list(framework.locations) == ["NIC"]
+    assert framework.marker.symbol == "circle-open"
+    assert framework.marker.line.color == theme.STATE_COLOURS["no_alert"]
+    not_tracked = by_name[layer.STATE_LABELS["not_assessed"]]
+    assert not_tracked.locations is None and list(not_tracked.lon) == [None]
 
 
 def test_prose_columns_keep_a_minimum_width():
@@ -188,6 +208,7 @@ def test_prose_columns_keep_a_minimum_width():
     assert cells["Notes"].style == {"minWidth": layer.TEXT_COLUMN_MIN_WIDTH}
     assert getattr(cells["Country"], "style", None) is None
     assert layer.TEXT_COLUMN_MIN_WIDTH.endswith("rem")
+    assert table.className == "table-wrap" and table.children.id == "activations-table"
 
 
 def test_unplaceable_code_count_is_logged(caplog):
@@ -213,6 +234,7 @@ def test_table_links_and_discrepancy_note():
     assert "https://example.org/companion" in rendered
     assert "activation-example_gtm_cerf_aa" in rendered
     assert "activation-example_nic_cerf_aa" in rendered
+    assert layer.has_discrepancies([with_note]) and not layer.has_discrepancies(entries())
 
     plain = str(build_table([{**no_activation_entry(), "wayback_url": None}]))
     assert "Companion documents differ." not in plain
