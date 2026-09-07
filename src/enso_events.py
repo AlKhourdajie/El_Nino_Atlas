@@ -188,16 +188,17 @@ def enso_event_records(
 
 
 def classify_enso_events(
-    oni_frame: pd.DataFrame,
+    index_frame: pd.DataFrame,
     threshold: float = THRESHOLD_C,
     min_seasons: int = MIN_SEASONS,
 ) -> pd.DataFrame:
-    """Return one row per El Niño or La Niña event in ``oni_frame``.
+    """Return one row per El Niño or La Niña event in ``index_frame``.
 
-    An empty frame with the event columns is returned when no run meets
-    the criterion. Runs shorter than ``min_seasons`` are not events.
+    ``index_frame`` is a tidy contract frame for exactly one series, as for
+    ``enso_event_records``; the series id may be ``ONI``, ``RONI`` or any
+    other single id. An empty frame with the event columns is returned
+    when no run meets the criterion. Runs shorter than ``min_seasons`` are
+    not events.
     """
-    validate_frame(oni_frame)
-    oni = _prepare(oni_frame, "oni")
-    events = _events(oni["value"].tolist(), oni["_d"].tolist(), threshold, min_seasons)
+    events = enso_event_records(index_frame, threshold, min_seasons)
     return pd.DataFrame([_row(event) for event in events], columns=EVENT_COLUMNS)

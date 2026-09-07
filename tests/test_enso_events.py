@@ -38,8 +38,8 @@ def oni_frame(values: list[float], start: str = "2000-01-01") -> pd.DataFrame:
     return pd.DataFrame(
         {
             "source_id": "noaa_oni",
-            "series_id": "oni",
-            "region": "nino34",
+            "series_id": "ONI",
+            "region": "NINO3.4",
             "date": dates,
             "value": [float(v) for v in values],
             "unit": "degC",
@@ -128,10 +128,21 @@ def test_gap_in_seasons_raises():
         classify_enso_events(df)
 
 
-def test_no_oni_series_raises():
-    df = oni_frame([0.6] * 6).assign(series_id="something_else")
-    with pytest.raises(ValueError, match="no rows with series_id 'oni'"):
-        classify_enso_events(df)
+def test_classify_requires_exactly_one_series():
+    one = oni_frame([0.6] * 6)
+    other = one.assign(series_id="RONI")
+    with pytest.raises(ValueError, match="exactly one series"):
+        classify_enso_events(pd.concat([one, other], ignore_index=True))
+
+
+def test_classify_accepts_any_single_series_id():
+    for series_id in ("RONI", "something_else"):
+        events = classify_enso_events(
+            oni_frame([0.0] + [0.9] * 5 + [0.0]).assign(series_id=series_id)
+        )
+        assert len(events) == 1
+        assert events.loc[0, "onset_season"] == "JFM 2000"
+        assert events.loc[0, "end_season"] == "MJJ 2000"
 
 
 def test_season_label_accepts_iso_strings():
