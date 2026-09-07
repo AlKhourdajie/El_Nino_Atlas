@@ -269,6 +269,9 @@ def test_page_renders_on_narrow_screens(monkeypatch):
     for graph in graphs(page):
         assert graph.figure.layout.width is None
         assert graph.config == layout.GRAPH_CONFIG
+        # A fixed container height, or the figure stretches to the explainer's
+        # height beside it on a wide screen.
+        assert graph.style == {"height": f"{layout.FIGURE_HEIGHT}px"}
     columns = [c for c in walk(page) if isinstance(c, dbc.Col)]
     assert columns and all(column.xs == 12 for column in columns)
 

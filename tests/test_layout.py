@@ -228,12 +228,23 @@ def test_graph_config_suits_touch_screens():
         "displayModeBar": False,
         "scrollZoom": False,
     }
-    assert layout.graph(go.Figure()).config == layout.GRAPH_CONFIG
-    assert getattr(layout.graph(go.Figure()), "id", None) is None
-    assert getattr(layout.graph(go.Figure()), "style", None) is None
-    named = layout.graph(go.Figure(), id="activations-map", height=420)
+    plain = layout.graph(go.Figure())
+    assert plain.config == layout.GRAPH_CONFIG
+    assert getattr(plain, "id", None) is None
+    named = layout.graph(go.Figure(), id="activations-map", height=300)
     assert named.id == "activations-map" and named.config == layout.GRAPH_CONFIG
-    assert named.style == {"height": "420px"}
+    assert named.style == {"height": "300px"}
+
+
+def test_graph_container_takes_the_figure_height():
+    # Dash otherwise sizes the container to its column, so a figure beside a
+    # long explainer would stretch with it on a wide screen.
+    assert layout.FIGURE_HEIGHT == theme.RESPONSIVE_LAYOUT["height"] == 420
+    assert layout.graph(go.Figure()).style == {"height": "420px"}
+    assert getattr(layout.graph(go.Figure(), height=None), "style", None) is None
+    section = layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p")
+    (graph,) = [c for c in walk(section) if isinstance(c, dcc.Graph)]
+    assert graph.style == {"height": "420px"}
 
 
 def test_every_column_fills_a_narrow_screen():

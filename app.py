@@ -29,7 +29,6 @@ ANTICIPATORY_ACTION = "Anticipatory action"
 REALISED_IMPACT = "Realised impact"
 
 MAP_ID = "activations-map"
-MAP_HEIGHT = theme.RESPONSIVE_LAYOUT["height"]
 
 
 def _snapshot(source_id: str) -> tuple | None:
@@ -53,13 +52,12 @@ def _index_panel(snapshot: tuple | None, events: list[Event] | None) -> object:
 def _activation_panel(entries: list[dict]) -> object:
     """The activation map beneath the shared three-state legend, with its entry table.
 
-    The map takes the shared figure height, because Dash would otherwise
-    size it to its column. The table runs beneath the row at full width,
-    where its ten columns keep their rows short.
+    The table runs beneath the row at full width, where its ten columns
+    keep their rows short.
     """
     column = [
         layout.legend(),
-        layout.graph(activations_map.build_figure(entries), id=MAP_ID, height=MAP_HEIGHT),
+        layout.graph(activations_map.build_figure(entries), id=MAP_ID),
     ]
     return layout.composite_panel(
         ANTICIPATORY_ACTION,

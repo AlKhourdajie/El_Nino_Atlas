@@ -49,6 +49,13 @@ CITATION_URL = "https://doi.org/10.5281/zenodo.22644790"
 # scroll zoom, so the page scrolls past a figure instead of into it.
 GRAPH_CONFIG: dict = {"responsive": True, "displayModeBar": False, "scrollZoom": False}
 
+# Every graph container takes the height the figures are authored at.
+# Dash otherwise gives the container the height of its column: on a wide
+# screen a figure beside a long explainer stretches to match it, and a
+# figure that shares its column with other content, such as the
+# activation map beneath the legend, pushes that content out of it.
+FIGURE_HEIGHT: int = theme.RESPONSIVE_LAYOUT["height"]
+
 # A table column of prose keeps at least this width inside the table's
 # scrolling container, so its rows keep a normal height on narrow screens.
 TEXT_COLUMN_MIN_WIDTH = "20rem"
@@ -91,13 +98,13 @@ def about() -> html.Section:
     return section("About", html.P(" ".join(ABOUT), className="mb-0"), id="about")
 
 
-def graph(figure: go.Figure, *, id: str | None = None, height: int | None = None) -> dcc.Graph:
-    """A panel figure with the touch-screen configuration.
+def graph(
+    figure: go.Figure, *, id: str | None = None, height: int | None = FIGURE_HEIGHT
+) -> dcc.Graph:
+    """A panel figure with the touch-screen configuration in a container of fixed height.
 
-    Dash gives the graph container the height of its column. A figure
-    that shares its column with other content, such as the activation
-    map beneath the legend, needs ``height`` in pixels, or the figure
-    takes the whole column and pushes the rest of the content out of it.
+    ``height`` is in pixels and defaults to ``FIGURE_HEIGHT``; ``None``
+    leaves the container's height to Dash.
     """
     kwargs: dict = {"id": id} if id else {}
     if height is not None:
