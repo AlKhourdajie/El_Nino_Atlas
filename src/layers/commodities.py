@@ -156,5 +156,5 @@ def build_figure(
     fig.add_hline(y=BASE_VALUE, line=theme.THRESHOLD_LINE)
     fig.update_xaxes(type="date", hoverformat="%b %Y")
     fig.update_yaxes(title_text="Index (January 2010 = 100)")
-    fig.update_layout(hovermode="x unified")
+    fig.update_layout(hovermode="x unified", **theme.RESPONSIVE_LAYOUT)
     return fig

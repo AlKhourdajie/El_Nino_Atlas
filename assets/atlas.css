@@ -1,0 +1,15 @@
+/* El Niño Atlas: rules that keep the page inside narrow viewports.
+   Dash serves every file in this folder automatically. */
+
+/* Long links in explainers and the footer wrap instead of widening the page. */
+.explainer a,
+footer a {
+  overflow-wrap: anywhere;
+}
+
+/* Figures never exceed their column. */
+.dash-graph,
+.js-plotly-plot,
+.js-plotly-plot .plot-container {
+  max-width: 100%;
+}

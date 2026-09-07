@@ -4,6 +4,7 @@
 test reads the snapshot directory or the network.
 """
 
+import dash_bootstrap_components as dbc
 import plotly.io as pio
 import pytest
 from dash import dcc, html
@@ -121,6 +122,19 @@ def test_index_panel_renders_without_the_price_snapshot(monkeypatch):
     page = app_module.build_page()
     assert str(page).count(layout.UNAVAILABLE_NOTICE) == 1
     assert len(graphs(page)) == 1
+
+
+def test_page_renders_on_narrow_screens(monkeypatch):
+    import app as app_module
+
+    install_snapshots(monkeypatch, {"noaa_oni": index_frame(), "worldbank_pink_sheet": prices()})
+    page = app_module.build_page()
+    assert page.fluid is True
+    for graph in graphs(page):
+        assert graph.figure.layout.width is None
+        assert graph.config == layout.GRAPH_CONFIG
+    columns = [c for c in walk(page) if isinstance(c, dbc.Col)]
+    assert columns and all(column.xs == 12 for column in columns)
 
 
 def test_errors_other_than_a_missing_snapshot_propagate(monkeypatch):

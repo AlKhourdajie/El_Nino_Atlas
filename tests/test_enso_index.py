@@ -150,6 +150,14 @@ def test_figure_sets_no_width(figure):
     assert figure.layout.width is None
 
 
+def test_figure_layout_suits_narrow_screens(figure):
+    assert figure.layout.autosize is True
+    assert figure.layout.legend.orientation == "h"
+    assert figure.layout.legend.y < 0
+    margin = figure.layout.margin
+    assert max(margin.l, margin.r, margin.t, margin.b) <= 48
+
+
 def test_explainer_contract():
     explainer = enso_index.explainer()
     assert "RONI" in explainer.title and "ONI" in explainer.title

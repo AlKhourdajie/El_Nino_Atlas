@@ -237,5 +237,5 @@ def build_figure(frame: pd.DataFrame, events: Iterable[Event]) -> go.Figure:
         hoverformat="%b %Y",
     )
     fig.update_yaxes(title_text="Anomaly (°C)", zeroline=True)
-    fig.update_layout(hovermode="x unified")
+    fig.update_layout(hovermode="x unified", **theme.RESPONSIVE_LAYOUT)
     return fig
