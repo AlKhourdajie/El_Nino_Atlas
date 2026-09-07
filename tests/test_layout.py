@@ -2,6 +2,7 @@
 
 from pathlib import Path
 
+import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import dcc, html
 
@@ -113,3 +114,26 @@ def test_footer_states_licences_and_citation():
 def test_page_copy_follows_the_rules():
     for text in (layout.OPENING, *layout.ABOUT, layout.LICENCE_LINE):
         assert "—" not in text
+
+
+def test_graph_config_suits_touch_screens():
+    assert layout.GRAPH_CONFIG == {
+        "responsive": True,
+        "displayModeBar": False,
+        "scrollZoom": False,
+    }
+    assert layout.graph(go.Figure()).config == layout.GRAPH_CONFIG
+
+
+def test_every_column_fills_a_narrow_screen():
+    sections = (
+        layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p"),
+        layout.unavailable_panel("Forecast", EXPLAINER, id="q"),
+    )
+    for section in sections:
+        columns = [c for c in walk(section) if isinstance(c, dbc.Col)]
+        assert columns and all(column.xs == 12 for column in columns)
+
+
+def test_page_container_is_fluid():
+    assert layout.page().fluid is True

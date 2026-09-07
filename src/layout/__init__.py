@@ -36,6 +36,10 @@ UNAVAILABLE_NOTICE = "Data snapshot not yet available"
 LICENCE_LINE = "Code: MIT licence. Data: licence stated with each panel."
 CITATION_URL = "https://doi.org/10.5281/zenodo.22644790"
 
+# Figures resize with their column; touch screens get no mode bar and no
+# scroll zoom, so the page scrolls past a figure instead of into it.
+GRAPH_CONFIG: dict = {"responsive": True, "displayModeBar": False, "scrollZoom": False}
+
 
 def section(title: str, *children, id: str | None = None) -> html.Section:
     """A titled page section."""
@@ -57,12 +61,13 @@ def about() -> html.Section:
 
 
 def graph(figure: go.Figure) -> dcc.Graph:
-    """A panel figure."""
-    return dcc.Graph(figure=figure)
+    """A panel figure with the touch-screen configuration."""
+    return dcc.Graph(figure=figure, config=GRAPH_CONFIG)
 
 
 def _panel_row(figure_column, explainer_column) -> dbc.Row:
-    return dbc.Row([dbc.Col(figure_column, lg=7), dbc.Col(explainer_column, lg=5)])
+    """Figure beside explainer on wide screens; each fills the row on narrow ones."""
+    return dbc.Row([dbc.Col(figure_column, xs=12, lg=7), dbc.Col(explainer_column, xs=12, lg=5)])
 
 
 def panel(
@@ -138,5 +143,5 @@ def legend() -> html.Div:
 
 
 def page(*children) -> dbc.Container:
-    """The served page, in the order given."""
-    return dbc.Container(list(children), fluid=False, className="pb-5")
+    """The served page, in the order given, filling the viewport width."""
+    return dbc.Container(list(children), fluid=True, className="pb-5")

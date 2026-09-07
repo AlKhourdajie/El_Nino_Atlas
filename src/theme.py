@@ -79,6 +79,18 @@ MUTED_LINE = "#9A948A"
 INDEX_LINE_COLOURS: dict[str, str] = {"primary": SERIES[0], "secondary": MUTED_LINE}
 THRESHOLD_LINE: dict[str, str | float] = {"color": MUTED_LINE, "width": 1, "dash": "dot"}
 
+# Shared figure layout for narrow screens: the figure fills its column
+# with no fixed width, the legend runs horizontally below the plot, and
+# the margins stay small. The height is fixed so the plot keeps its shape
+# as the column narrows; Plotly expands the margins for tick labels, the
+# range buttons and the legend as needed.
+RESPONSIVE_LAYOUT: dict = {
+    "autosize": True,
+    "height": 420,
+    "margin": {"l": 44, "r": 12, "t": 36, "b": 8},
+    "legend": {"orientation": "h", "yanchor": "top", "y": -0.12, "xanchor": "left", "x": 0},
+}
+
 FONT_FAMILY = "Inter, 'Helvetica Neue', Arial, sans-serif"
 
 TEMPLATE_DARK = "atlas_dark"
