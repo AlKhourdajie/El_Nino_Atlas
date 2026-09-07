@@ -28,9 +28,15 @@
 # A framework_no_activation entry carries no activation figures:
 # activation_date, amount_usd and people_targeted are null.
 #
-# The single entry below is an example of the shape only. It is not a
-# real activation. iso3 must be a real code, so the example borrows
-# Antarctica, where no anticipatory-action framework exists.
+# The first entry is an example of the shape only. It is not a real
+# activation. iso3 must be a real code, so the example borrows Antarctica,
+# where no anticipatory-action framework exists.
+#
+# The entries that follow were curated on 7 September 2026 from the CERF
+# allocation summaries and WFP's note "Anticipatory Action Activation -
+# Central America (Guatemala, El Salvador, Honduras, Nicaragua) - March
+# 2026". Every figure is quoted from the source document. The comment
+# above each entry records what the schema has no field for.
 
 activations:
   - example: true
@@ -52,3 +58,224 @@ activations:
       - statement: Example statement; a companion document gives a different figure
         value: 0
         source_url: https://example.org/example-companion-document
+
+  # --------------------------------------------- CERF, Dry Corridor, March 2026
+  # Amount and people from the header table of the allocation summary.
+  # Allocation dated 17 Mar 2026 on the page, status Completed at retrieval.
+  # Trigger date 5 March 2026 from WFP's note (page 1, paragraph 3). ECMWF is
+  # cited to the Honduras summary (SEAS5) and to WFP's regional statement.
+  # The Guatemala page names no forecast product.
+  - id: cerf_aa_gtm_2026-03
+    iso3: GTM
+    country: Guatemala
+    framework: cerf_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Framework trigger threshold reached in March 2026. Regional drought
+      triggers activated on 5 March 2026 on a forecast rainfall deficit at
+      thresholds that typically occur only once every four years in the Primera
+      season (May to August).
+    forecast_source: ECMWF seasonal forecast (SEAS5)
+    amount_usd: 4000000
+    people_targeted: 60000
+    sector: >-
+      Early warning messages, multi-purpose cash, short-cycle and drought-tolerant
+      seeds, livestock protection, water, sanitation and hygiene (WASH), disease
+      prevention and health services. Projects by UNICEF, FAO, WFP and WHO.
+    source_url: https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-GTM-26-RR-1521
+    wayback_url: https://web.archive.org/web/20260907153850/https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-GTM-26-RR-1521
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies: []
+
+  # Amount and people from the header table of the allocation summary.
+  # Allocation dated 17 Mar 2026 on the page, status Completed at retrieval.
+  # Trigger date 5 March 2026 from WFP's note (page 1, paragraph 3). The page
+  # names ECMWF SEAS5 and a "1 in 3 year threshold"; WFP's note gives the
+  # regional threshold as once every four years. Both are quoted.
+  - id: cerf_aa_hnd_2026-03
+    iso3: HND
+    country: Honduras
+    framework: cerf_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Seasonal forecasts from ECMWF SEAS5 indicating rainfall below the 1 in 3
+      year threshold in El Paraíso and Francisco Morazán. Framework trigger
+      threshold reached in March 2026. Regional drought triggers activated on
+      5 March 2026 on a forecast rainfall deficit at thresholds that typically
+      occur only once every four years in the Primera season (May to August).
+    forecast_source: ECMWF seasonal forecast (SEAS5)
+    amount_usd: 4000000
+    people_targeted: 65000
+    sector: >-
+      Early warning messages, unconditional cash transfers, short-cycle and
+      drought-tolerant seeds, livestock protection, water, sanitation and hygiene
+      (WASH), disease prevention and health services. Projects by UNICEF, FAO,
+      WFP and WHO.
+    source_url: https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-HND-26-RR-1520
+    wayback_url: https://web.archive.org/web/20260907155742/https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-HND-26-RR-1520
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies: []
+
+  # Amount and people from the header table of the allocation summary.
+  # Allocation dated 20 Mar 2026 on the page, status Under Implementation at
+  # retrieval. Trigger date 5 March 2026 from WFP's note (page 1, paragraph
+  # 3). ECMWF is cited to the Honduras summary (SEAS5) and to WFP's regional
+  # statement. The El Salvador page names no forecast product.
+  - id: cerf_aa_slv_2026-03
+    iso3: SLV
+    country: El Salvador
+    framework: cerf_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Forecast rainfall deficits in Ahuachapán and Santa Ana. Framework trigger
+      threshold reached in March 2026. Regional drought triggers activated on
+      5 March 2026 on a forecast rainfall deficit at thresholds that typically
+      occur only once every four years in the Primera season (May to August).
+    forecast_source: ECMWF seasonal forecast (SEAS5)
+    amount_usd: 2500000
+    people_targeted: 20000
+    sector: >-
+      Food security and agriculture (FAO, WFP), water, sanitation and hygiene
+      (UNICEF), nutrition, health (PAHO/WHO).
+    source_url: https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-SLV-26-RR-1519
+    wayback_url: https://web.archive.org/web/20260907155822/https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-SLV-26-RR-1519
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies:
+      - statement: Narrative of the same CERF summary ("About 25,000 people will receive complementary support"), against 20,000 in its header table
+        value: 25000
+        source_url: https://cerf.un.org/what-we-do/allocation/2026/summary/CERF-SLV-26-RR-1519
+
+  # ---------------------------------------------- WFP, Dry Corridor, March 2026
+  # Figures from WFP's note: page 1 table "Anticipatory Actions Planned per
+  # Country" and the page 2 country paragraph. amount_usd is WFP's component
+  # of the CERF allocation in cerf_aa_gtm_2026-03 and is not additional
+  # funding. The 3,400 people with grain silos are in the sector text and
+  # not in people_targeted. The note cites NOAA's March 2026 outlook, which
+  # gave El Niño a 62 per cent probability of emerging in June to August, so
+  # the activation preceded the event.
+  - id: wfp_aa_gtm_2026-03
+    iso3: GTM
+    country: Guatemala
+    framework: wfp_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Regional drought triggers activated on 5 March 2026 on a forecast rainfall
+      deficit at thresholds that typically occur only once every four years in
+      the Primera season (May to August).
+    forecast_source: European Centre for Medium-Range Weather Forecasts (ECMWF)
+    amount_usd: 1600000
+    people_targeted: 33885
+    sector: >-
+      Multipurpose cash transfers and early warning messages for 33,885 people in
+      Jalapa. Grain silos for 3,400 people. Basic grains and climate monitoring
+      kits.
+    source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    wayback_url: https://web.archive.org/web/20260907161601/https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies:
+      - statement: Headline on page 1 of the WFP note ("over 100,000 people"), against its page 1 table, which gives 74,379 people across El Salvador, Guatemala and Honduras plus 300,000 school-aged children in Nicaragua
+        value: over 100,000
+        source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+      - statement: Regional people figure in the WFP release of 17 March 2026 for Honduras, Guatemala and El Salvador, against 74,379 in the note's table
+        value: "75 000"
+        source_url: https://es.wfp.org/noticias/america-central-75-000-personas-se-preparan-frente-la-sequia-y-posible-el-nino
+
+  # Figures from WFP's note: page 1 table and the page 2 Honduras paragraph.
+  # amount_usd is WFP's component of the CERF allocation in
+  # cerf_aa_hnd_2026-03 and is not additional funding. The note cites NOAA's
+  # March 2026 outlook (62 per cent probability of El Niño emerging in June
+  # to August), so the activation preceded the event.
+  - id: wfp_aa_hnd_2026-03
+    iso3: HND
+    country: Honduras
+    framework: wfp_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Regional drought triggers activated on 5 March 2026 on a forecast rainfall
+      deficit at thresholds that typically occur only once every four years in
+      the Primera season (May to August).
+    forecast_source: European Centre for Medium-Range Weather Forecasts (ECMWF)
+    amount_usd: 1600000
+    people_targeted: 36206
+    sector: >-
+      Cash transfers and early warning messages for 36,206 people in El Paraíso
+      and Francisco Morazán.
+    source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    wayback_url: https://web.archive.org/web/20260907161601/https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies:
+      - statement: Headline on page 1 of the WFP note ("over 100,000 people"), against its page 1 table, which gives 74,379 people across El Salvador, Guatemala and Honduras plus 300,000 school-aged children in Nicaragua
+        value: over 100,000
+        source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+      - statement: Regional people figure in the WFP release of 17 March 2026 for Honduras, Guatemala and El Salvador, against 74,379 in the note's table
+        value: "75 000"
+        source_url: https://es.wfp.org/noticias/america-central-75-000-personas-se-preparan-frente-la-sequia-y-posible-el-nino
+
+  # Figures from WFP's note: page 1 table and the page 2 El Salvador
+  # paragraph. amount_usd is WFP's component of the CERF allocation in
+  # cerf_aa_slv_2026-03 and is not additional funding. The note cites NOAA's
+  # March 2026 outlook (62 per cent probability of El Niño emerging in June
+  # to August), so the activation preceded the event.
+  - id: wfp_aa_slv_2026-03
+    iso3: SLV
+    country: El Salvador
+    framework: wfp_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Regional drought triggers activated on 5 March 2026 on a forecast rainfall
+      deficit at thresholds that typically occur only once every four years in
+      the Primera season (May to August).
+    forecast_source: European Centre for Medium-Range Weather Forecasts (ECMWF)
+    amount_usd: 600000
+    people_targeted: 4288
+    sector: >-
+      Cash transfers and early warning messages for 4,288 people in Santa Ana and
+      Ahuachapán.
+    source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    wayback_url: https://web.archive.org/web/20260907161601/https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies:
+      - statement: Headline on page 1 of the WFP note ("over 100,000 people"), against its page 1 table, which gives 74,379 people across El Salvador, Guatemala and Honduras plus 300,000 school-aged children in Nicaragua
+        value: over 100,000
+        source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+      - statement: Regional people figure in the WFP release of 17 March 2026 for Honduras, Guatemala and El Salvador, against 74,379 in the note's table
+        value: "75 000"
+        source_url: https://es.wfp.org/noticias/america-central-75-000-personas-se-preparan-frente-la-sequia-y-posible-el-nino
+
+  # Figures from WFP's note: page 1 table and the page 2 Nicaragua paragraph.
+  # amount_usd is the sum of USD 800,000 from the Government of Ireland and
+  # USD 5.5 million from the Bureau of Western Hemisphere Affairs (United
+  # States), as the note states them. No CERF funding. The table gives
+  # 300,000 school-aged children and the paragraph "more than 300,000". The
+  # note cites NOAA's March 2026 outlook (62 per cent probability of El Niño
+  # emerging in June to August), so the activation preceded the event.
+  - id: wfp_aa_nic_2026-03
+    iso3: NIC
+    country: Nicaragua
+    framework: wfp_aa
+    status: activated
+    activation_date: 2026-03-05
+    trigger: >-
+      Regional drought triggers activated on 5 March 2026 on a forecast rainfall
+      deficit at thresholds that typically occur only once every four years in
+      the Primera season (May to August).
+    forecast_source: European Centre for Medium-Range Weather Forecasts (ECMWF)
+    amount_usd: 6300000
+    people_targeted: 300000
+    sector: >-
+      Shock-responsive school feeding through the national social protection
+      system, with additional meals for more than 300,000 children and water
+      filters, storage containers and eating utensils in Dry Corridor schools.
+    source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    wayback_url: https://web.archive.org/web/20260907161601/https://docs.wfp.org/api/documents/WFP-0000172660/download/
+    retrieved: "2026-09-07T17:10:00Z"
+    discrepancies:
+      - statement: Headline on page 1 of the WFP note ("over 100,000 people"), against its page 1 table, which gives 74,379 people across El Salvador, Guatemala and Honduras plus 300,000 school-aged children in Nicaragua
+        value: over 100,000
+        source_url: https://docs.wfp.org/api/documents/WFP-0000172660/download/
