@@ -5,7 +5,6 @@ import hashlib
 import json
 import re
 
-import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import pytest
 from dash import html
@@ -216,9 +215,10 @@ def test_explainer_title_matches_the_section_and_how_block_carries_the_link():
     for field in ("what", "why", "not_shown"):
         assert not link_re.search(getattr(explainer, field))
     anchors = [c for c in walk(render_explainer(explainer)) if isinstance(c, html.A)]
+    # The source line precedes the "Source and method" disclosure in the card header.
     assert [(a.children, a.href) for a in anchors] == [
-        (tc.SOURCE_LINK_LABEL, tc.SOURCE_URL),
         (tc.SOURCE_NAME, tc.SOURCE_URL),
+        (tc.SOURCE_LINK_LABEL, tc.SOURCE_URL),
     ]
 
 
@@ -290,17 +290,23 @@ def test_image_panel_shows_the_schematic_with_its_explainer():
 def test_image_panel_has_the_page_panel_shape():
     panel = tc.build_image_panel()
     assert panel.id == "panel-teleconnections"
+    assert panel.className == "card"
     assert next(c for c in walk(panel) if isinstance(c, html.H2)).children == tc.PANEL_TITLE
     images = [c for c in walk(panel) if isinstance(c, html.Img)]
     assert len(images) == 1 and images[0].alt == tc.IMAGE_ALT
-    columns = [c for c in walk(panel) if isinstance(c, dbc.Col)]
-    assert columns and all(column.xs == 12 for column in columns)
+    # The draft label stays: the title carries it and no stage overline replaces it.
+    assert not [c for c in walk(panel) if getattr(c, "className", None) == "card__stage"]
+    (figure,) = [c for c in walk(panel) if isinstance(c, html.Figure)]
+    assert images[0] in list(walk(figure))
 
 
 def test_image_fills_the_column_and_keeps_its_ratio():
     assert tc.IMAGE_STYLE["maxWidth"] == "100%"
     assert tc.IMAGE_STYLE["width"] == "100%"
     assert tc.IMAGE_STYLE["height"] == "auto"
+    (image,) = [c for c in walk(tc.build_image_panel()) if isinstance(c, html.Img)]
+    # The file's own pixel size, per assets/teleconnections/PROVENANCE.md.
+    assert (image.width, image.height) == ("940", "1215")
     rendered = str(tc.build_image_panel())
     assert "'maxWidth': '100%'" in rendered
     assert "'height': 'auto'" in rendered

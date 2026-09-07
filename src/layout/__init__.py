@@ -1,19 +1,38 @@
 """Layout builders for the El Niño Atlas page.
 
 ``app.py`` assembles the page from these builders along the forecast,
-action, impact spine. A panel is one section: the stage as its heading,
-the figure in one column and the rendered explainer beside it. A panel
-whose snapshot is missing keeps its explainer and shows a visible notice
-in place of the figure. The page copy lives here; the copy rules are in
-CLAUDE.md.
+action, impact spine. The page is a skip link, a slim sticky navigation
+bar, the hero, the main column and the footer. Each panel is one card
+with a fixed header grammar: the stage as an overline, the title, one
+sentence on what the panel shows, the source line with its licence
+badge and retrieval stamp, a "Source and method" disclosure holding the
+metric definition in the source's own words, and a discrepancy note
+where the register carries one. The figure follows, then the rest of
+the explainer. A panel whose snapshot is missing keeps its explainer
+and shows a visible notice in place of the figure; a panel whose data
+failed to load shows an error banner naming the source and the error.
+The page copy lives here; the copy rules are in CLAUDE.md. Class names
+map to ``assets/atlas.css``; the colour and type tokens come from
+``assets/tokens.css``, generated from ``design/tokens.json``.
 """
 
-import dash_bootstrap_components as dbc
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import date
+
 import plotly.graph_objects as go
 from dash import dcc, html
 
 from src import theme
-from src.layout.explainer import Explainer, render_explainer
+from src.enso_events import Event
+from src.layout.explainer import (
+    Explainer,
+    explainer_body,
+    explainer_header,
+    lede,
+    source_line,
+)
 
 TITLE = "El Niño Atlas"
 
@@ -33,7 +52,12 @@ ABOUT: tuple[str, ...] = (
     "stages sit on one page.",
 )
 
+# One sentence on what the atlas is, from the README, shown beneath the
+# reading line; tests/test_layout.py checks it against README.md.
+SCOPE = "The atlas is a research tool in development."
+
 UNAVAILABLE_NOTICE = "Data snapshot not yet available"
+ERROR_PREFIX = "Data load failed"
 
 # The footer links. The ORCID identifier and the repository are the ones in
 # CITATION.cff; tests/test_layout.py checks them against it.
@@ -43,28 +67,157 @@ AFFILIATION = "Imperial College London"
 ORCID = "0000-0003-1376-7529"
 ORCID_URL = f"https://orcid.org/{ORCID}"
 REPOSITORY_URL = "https://github.com/AlKhourdajie/El_Nino_Atlas"
-CITATION_URL = "https://doi.org/10.5281/zenodo.22644790"
+ISSUES_URL = f"{REPOSITORY_URL}/issues"
+CONCEPT_DOI = "10.5281/zenodo.22644790"
+CITATION_URL = f"https://doi.org/{CONCEPT_DOI}"
 
-# Figures resize with their column; touch screens get no mode bar and no
-# scroll zoom, so the page scrolls past a figure instead of into it.
-GRAPH_CONFIG: dict = {"responsive": True, "displayModeBar": False, "scrollZoom": False}
+# The navigation anchors, in page order.
+NAV_ITEMS: tuple[tuple[str, str], ...] = (
+    ("Forecast", "#panel-index"),
+    ("Realised impacts", "#panel-commodities"),
+    ("Anticipatory action", "#panel-activations"),
+    ("Sources and methods", "#sources"),
+    ("Cite", "#cite"),
+)
+SOURCES_TITLE = "Sources and methods"
+
+# Interaction copy: control labels, not claims.
+TIME_RANGE_LABEL = "Time range"
+EVENT_SELECT_LABEL = "ENSO event"
+EVENT_SELECT_PLACEHOLDER = "Choose an event"
+BANDS_LABEL = "Phase bands"
+DOWNLOAD_LABELS: dict[str, str] = {"csv": "CSV", "png": "PNG", "svg": "SVG"}
+DOWNLOAD_GROUP_LABEL = "Download"
+COPY_CITATION_LABEL = "Copy citation"
+REPORT_LABEL = "Report a discrepancy"
+THEME_TOGGLE_LABEL = "Colour scheme"
+SKIP_LINK_LABEL = "Skip to content"
+
+PHASE_NAMES: dict[str, str] = {"el_nino": "El Niño", "la_nina": "La Niña"}
+
+# Figures resize with their column. The mode bar keeps zoom, pan and
+# reset only; downloads have their own buttons. Scroll zoom stays off so
+# the page scrolls past a figure instead of into it.
+GRAPH_CONFIG: dict = {
+    "responsive": True,
+    "displayModeBar": True,
+    "displaylogo": False,
+    # plotly.js 4 shows a "Share chart" button by default; it would send
+    # the figure to Plotly's cloud, so it stays off.
+    "showSendToCloud": False,
+    "scrollZoom": False,
+    "doubleClick": "reset",
+    "modeBarButtonsToRemove": [
+        "select2d",
+        "lasso2d",
+        "zoomIn2d",
+        "zoomOut2d",
+        "autoScale2d",
+        "toggleSpikelines",
+        "hoverClosestCartesian",
+        "hoverCompareCartesian",
+        "toImage",
+        "sendChartToCloud",
+        "sendDataToCloud",
+    ],
+}
+# The map is a static natural-earth view; it needs no mode bar.
+MAP_CONFIG: dict = {
+    "responsive": True,
+    "displayModeBar": False,
+    "showSendToCloud": False,
+    "scrollZoom": False,
+}
 
 # Every graph container takes the height the figures are authored at.
-# Dash otherwise gives the container the height of its column: on a wide
-# screen a figure beside a long explainer stretches to match it, and a
-# figure that shares its column with other content, such as the
-# activation map beneath the legend, pushes that content out of it.
+# Dash otherwise gives the container the height of its column.
 FIGURE_HEIGHT: int = theme.RESPONSIVE_LAYOUT["height"]
 
 # A table column of prose keeps at least this width inside the table's
 # scrolling container, so its rows keep a normal height on narrow screens.
 TEXT_COLUMN_MIN_WIDTH = "20rem"
 
+GRAPH_IDS: dict[str, str] = {
+    "index": "graph-index",
+    "commodities": "graph-commodities",
+    "activations": "activations-map",
+}
+
+
+@dataclass(frozen=True)
+class BuildInfo:
+    """The commit and time the running page was built from."""
+
+    sha: str
+    built_at: str
+
+    @property
+    def short(self) -> str:
+        return self.sha[:7]
+
+
+@dataclass(frozen=True)
+class SourceEntry:
+    """One line of the sources section: a panel and its source."""
+
+    panel_id: str
+    explainer: Explainer
+    retrieved_at: str | None = None
+
+
+def map_config(topojson_url: str) -> dict:
+    """The map configuration with the topojson served from ``topojson_url``."""
+    return {**MAP_CONFIG, "topojsonURL": topojson_url}
+
+
+def skip_link() -> html.A:
+    return html.A(SKIP_LINK_LABEL, href="#main", className="skip-link", id="skip-link")
+
+
+def theme_toggle() -> html.Button:
+    """The scheme toggle: the visible label names the scheme the click switches to.
+
+    The stylesheet shows one of the two spans per scheme, so the button's
+    accessible name is its visible text.
+    """
+    return html.Button(
+        [
+            html.Span("Dark", className="when-light"),
+            html.Span("Light", className="when-dark"),
+        ],
+        id="theme-toggle",
+        className="btn btn--ghost site-nav__toggle",
+        type="button",
+        title=THEME_TOGGLE_LABEL,
+    )
+
+
+def nav() -> html.Nav:
+    """The slim sticky navigation with anchors in page order."""
+    items = [
+        html.Li(html.A(label, href=href, className="site-nav__link")) for label, href in NAV_ITEMS
+    ]
+    return html.Nav(
+        html.Div(
+            [
+                html.A(TITLE, href="#header", className="site-nav__brand"),
+                html.Ul(items, className="site-nav__list"),
+                theme_toggle(),
+            ],
+            className="site-nav__inner",
+        ),
+        id="site-nav",
+        className="site-nav",
+        **{"aria-label": "Sections"},
+    )
+
 
 def section(title: str, *children, id: str | None = None) -> html.Section:
     """A titled page section."""
     kwargs = {"id": id} if id else {}
-    return html.Section([html.H2(title, className="h5 mt-4 mb-2"), *children], **kwargs)
+    return html.Section(
+        [html.H2(title, className="section__title"), *children], className="section", **kwargs
+    )
 
 
 def maintainer_line() -> html.P:
@@ -72,70 +225,213 @@ def maintainer_line() -> html.P:
     return html.P(
         ["Maintained by ", html.A(MAINTAINER, href=MAINTAINER_URL), f", {AFFILIATION}."],
         id="maintainer",
-        className="text-muted mb-2",
+        className="hero__maintainer",
     )
 
 
 def opening(reading: str | None = None) -> html.Header:
-    """The title, the maintainer line, the opening line and, when given, the reading line.
+    """The hero: title, maintainer line, opening line, reading line, scope line.
 
     ``reading`` is the one-line summary of the latest season that
     ``src.layers.enso_index.latest_reading`` builds. It is ``None`` when
     no index snapshot exists, and the line is then omitted.
     """
     children: list = [
-        html.H1(TITLE, className="mt-4"),
+        html.H1(TITLE, className="hero__title"),
         maintainer_line(),
-        html.P(OPENING, className="lead", id="opening"),
+        html.P(OPENING, className="hero__lead", id="opening"),
     ]
     if reading is not None:
-        children.append(html.P(reading, id="latest-reading"))
-    return html.Header(children, id="header")
+        children.append(html.P(reading, id="latest-reading", className="hero__reading"))
+    children.append(html.P(SCOPE, id="scope", className="hero__scope"))
+    return html.Header(children, id="header", className="hero")
 
 
 def about() -> html.Section:
     """Two sentences on the event-resolved logic of the atlas, shared with the README."""
-    return section("About", html.P(" ".join(ABOUT), className="mb-0"), id="about")
+    return section("About", html.P(" ".join(ABOUT), className="prose"), id="about")
+
+
+def _shift_months(day: date, months: int) -> date:
+    year, month_index = divmod(day.year * 12 + day.month - 1 + months, 12)
+    return date(year, month_index + 1, 1)
+
+
+def event_label(event: Event) -> str:
+    """'El Niño, MAM 1997 to MAM 1998', with 'provisional' appended for a provisional run."""
+    label = f"{PHASE_NAMES[event.phase]}, {event.seasons[0]} to {event.seasons[-1]}"
+    if event.provisional:
+        label += ", provisional"
+    return label
+
+
+def event_window(event: Event, until: date, context_months: int = 12) -> tuple[str, str]:
+    """ISO bounds of the view that shows ``event`` with a year of context either side.
+
+    The window starts one month before the onset season's centre month
+    (the season's first month) less the context, and ends two months
+    after the last season's centre month plus the context. An event with
+    no end runs to ``until``.
+    """
+    start = _shift_months(event.onset, -1 - context_months)
+    end = until if event.end is None else _shift_months(event.end, 2)
+    end = _shift_months(end, context_months)
+    return start.isoformat(), end.isoformat()
+
+
+def event_options(events: list[Event], until: date) -> list[dict[str, str]]:
+    """The select options for the ENSO events in the data, in date order."""
+    options = []
+    for event in events:
+        start, end = event_window(event, until)
+        options.append({"label": event_label(event), "value": f"{start},{end}"})
+    return options
+
+
+def time_controls(range_buttons: tuple[dict, ...], events: list[dict[str, str]]) -> html.Section:
+    """The shared time-range bar: the record presets, the event select, the band toggle.
+
+    ``range_buttons`` are the index panel's ``RANGE_BUTTONS`` records; the
+    first three carry the ids ``range-all``, ``range-30`` and ``range-5``.
+    ``events`` are ``event_options``. The native select reports through
+    ``assets/atlas.js``, which writes its value to the store
+    ``event-select-store``; the band toggle is a button whose
+    ``aria-pressed`` attribute is ``"true"`` while the bands are shown.
+    """
+    ids = ("range-all", "range-30", "range-5")
+    buttons = [
+        html.Button(button["label"], id=button_id, className="btn", type="button")
+        for button, button_id in zip(range_buttons, ids, strict=True)
+    ]
+    select = html.Select(
+        [html.Option(EVENT_SELECT_PLACEHOLDER, value="")]
+        + [html.Option(option["label"], value=option["value"]) for option in events],
+        id="event-select",
+        className="select",
+    )
+    return html.Section(
+        [
+            html.Span(TIME_RANGE_LABEL, className="controls__label", id="time-range-label"),
+            html.Div(buttons, className="controls__group", role="group"),
+            html.Label(
+                [html.Span(EVENT_SELECT_LABEL, className="visually-hidden"), select],
+                className="controls__select",
+            ),
+            html.Button(
+                [html.Span(className="check", **{"aria-hidden": "true"}), BANDS_LABEL],
+                id="bands-toggle",
+                className="btn btn--ghost controls__check",
+                type="button",
+                **{"aria-pressed": "true"},
+            ),
+        ],
+        id="time-controls",
+        className="controls",
+        role="group",
+        **{"aria-labelledby": "time-range-label"},
+    )
 
 
 def graph(
-    figure: go.Figure, *, id: str | None = None, height: int | None = FIGURE_HEIGHT
+    figure: go.Figure,
+    *,
+    id: str | None = None,
+    height: int | None = FIGURE_HEIGHT,
+    config: dict | None = None,
 ) -> dcc.Graph:
-    """A panel figure with the touch-screen configuration in a container of fixed height.
+    """A panel figure in a container of fixed height.
 
     ``height`` is in pixels and defaults to ``FIGURE_HEIGHT``; ``None``
-    leaves the container's height to Dash.
+    leaves the container's height to Dash. ``config`` defaults to
+    ``GRAPH_CONFIG``.
     """
     kwargs: dict = {"id": id} if id else {}
     if height is not None:
         kwargs["style"] = {"height": f"{height}px"}
-    return dcc.Graph(figure=figure, config=GRAPH_CONFIG, **kwargs)
+    return dcc.Graph(figure=figure, config=config or GRAPH_CONFIG, **kwargs)
 
 
-def _panel_row(figure_column, explainer_column) -> dbc.Row:
-    """Figure beside explainer on wide screens; each fills the row on narrow ones."""
-    return dbc.Row([dbc.Col(figure_column, xs=12, lg=7), dbc.Col(explainer_column, xs=12, lg=5)])
+def figure_block(content, caption: str, *, id: str) -> html.Figure:
+    """The figure with one screen-reader sentence, taken from its caption."""
+    return html.Figure(
+        [content, html.Figcaption(caption, className="visually-hidden", id=f"{id}-caption")],
+        className="card__figure",
+        id=f"{id}-figure",
+        **{"aria-describedby": f"{id}-caption"},
+    )
 
 
-def composite_panel(
-    stage: str,
+def download_toolbar(key: str, *, csv: bool = True, image: bool = True) -> html.Div:
+    """The per-panel download buttons: CSV of the plotted data, PNG and SVG of the figure."""
+    buttons: list = []
+    if csv:
+        buttons.append(
+            html.Button(DOWNLOAD_LABELS["csv"], id=f"csv-{key}", className="btn", type="button")
+        )
+    if image:
+        for fmt in ("png", "svg"):
+            buttons.append(
+                html.Button(DOWNLOAD_LABELS[fmt], id=f"{fmt}-{key}", className="btn", type="button")
+            )
+    return html.Div(
+        [
+            html.Span(DOWNLOAD_GROUP_LABEL, className="card__toolbar-label"),
+            *buttons,
+            html.Span(
+                id=f"export-sink-{key}", className="visually-hidden", **{"aria-live": "polite"}
+            ),
+        ],
+        className="card__toolbar",
+        role="group",
+        **{"aria-label": DOWNLOAD_GROUP_LABEL},
+    )
+
+
+def error_banner(source: str, error: str) -> html.Div:
+    """A visible banner naming the source and the error of a failed data load."""
+    return html.Div(
+        [html.Strong(f"{ERROR_PREFIX}: "), html.Span(source), ". ", html.Code(error)],
+        className="banner banner--error",
+        role="alert",
+    )
+
+
+def unavailable_notice() -> html.P:
+    """The notice a panel shows in place of its figure when its snapshot is missing."""
+    return html.P(UNAVAILABLE_NOTICE, className="notice", role="status")
+
+
+def card(
+    stage: str | None,
     explainer: Explainer,
-    column,
+    content,
     *,
     id: str,
     retrieved_at: str | None = None,
+    toolbar: html.Div | None = None,
+    note=None,
     beneath: tuple = (),
 ) -> html.Section:
-    """A panel whose figure column holds ``column``, the components the caller assembled.
+    """One panel as a card: header, toolbar, content, explainer body, then ``beneath``.
 
-    The activation panel stacks the three-state legend and the map there
-    and passes its entry table as ``beneath``: components placed after
-    the row at the full width of the page, where a wide table keeps its
-    rows short. ``retrieved_at`` is omitted when the content is not a
-    snapshot.
+    ``content`` is the figure block, the notice or the error banner.
+    ``note`` is placed under the disclosure, for the discrepancy note.
+    ``beneath`` components follow the body at the card's full width.
     """
-    row = _panel_row(column, render_explainer(explainer, retrieved_at))
-    return section(stage, row, *beneath, id=id)
+    header: list = []
+    if stage:
+        header.append(html.P(stage, className="card__stage"))
+    header.append(html.H2(explainer.title, className="card__title", id=f"{id}-title"))
+    header.extend(explainer_header(explainer, retrieved_at))
+    if note is not None:
+        header.append(note)
+    children: list = [html.Header(header, className="card__header")]
+    if toolbar is not None:
+        children.append(toolbar)
+    children.append(content)
+    children.append(explainer_body(explainer))
+    children.extend(beneath)
+    return html.Section(children, id=id, className="card", **{"aria-labelledby": f"{id}-title"})
 
 
 def panel(
@@ -145,23 +441,54 @@ def panel(
     retrieved_at: str,
     *,
     id: str,
+    graph_id: str | None = None,
+    toolbar: html.Div | None = None,
 ) -> html.Section:
-    """One panel: the stage heading, the figure, and the explainer beside it."""
-    return composite_panel(stage, explainer, graph(figure), id=id, retrieved_at=retrieved_at)
+    """One panel: the card with the figure in the figure block."""
+    content = figure_block(graph(figure, id=graph_id), lede(explainer), id=id)
+    return card(stage, explainer, content, id=id, retrieved_at=retrieved_at, toolbar=toolbar)
+
+
+def composite_panel(
+    stage: str | None,
+    explainer: Explainer,
+    column,
+    *,
+    id: str,
+    retrieved_at: str | None = None,
+    toolbar: html.Div | None = None,
+    note=None,
+    beneath: tuple = (),
+) -> html.Section:
+    """A panel whose content is ``column``, the components the caller assembled.
+
+    The activation panel stacks the three-state legend and the map there
+    and passes its entry table as ``beneath``. ``retrieved_at`` is omitted
+    when the content is not a snapshot.
+    """
+    content = figure_block(column, lede(explainer), id=id)
+    return card(
+        stage,
+        explainer,
+        content,
+        id=id,
+        retrieved_at=retrieved_at,
+        toolbar=toolbar,
+        note=note,
+        beneath=beneath,
+    )
 
 
 def unavailable_panel(stage: str, explainer: Explainer, *, id: str) -> html.Section:
     """A panel whose snapshot is missing: the notice in place of the figure."""
-    notice = html.P(
-        UNAVAILABLE_NOTICE,
-        className="p-3 mb-3",
-        role="status",
-        style={
-            "border": f"1px dashed {theme.STATE_COLOURS['not_assessed']}",
-            "borderRadius": "4px",
-        },
-    )
-    return section(stage, _panel_row(notice, render_explainer(explainer)), id=id)
+    return card(stage, explainer, unavailable_notice(), id=id)
+
+
+def error_panel(
+    stage: str | None, explainer: Explainer, *, id: str, source: str, error: str
+) -> html.Section:
+    """A panel whose data failed to load: the banner in place of the figure."""
+    return card(stage, explainer, error_banner(source, error), id=id)
 
 
 def container(id: str) -> html.Div:
@@ -169,50 +496,20 @@ def container(id: str) -> html.Div:
     return html.Div(id=id)
 
 
-def footer() -> html.Footer:
-    """The maintainer line, the licence line and the cite line, each with its links."""
-    maintainer = html.P(
-        [
-            "El Niño Atlas is maintained by ",
-            html.A(MAINTAINER, href=MAINTAINER_URL),
-            f", {AFFILIATION}. ORCID: ",
-            html.A(ORCID_URL, href=ORCID_URL),
-        ],
-        className="mb-1",
-    )
-    licence = html.P(
-        [
-            "Code: MIT licence, on ",
-            html.A("GitHub", href=REPOSITORY_URL),
-            ". Data: licence stated with each panel.",
-        ],
-        className="mb-1",
-    )
-    cite = html.P(["Cite: ", html.A(CITATION_URL, href=CITATION_URL)], className="mb-0")
-    return html.Footer(
-        [maintainer, licence, cite],
-        id="footer",
-        className="text-muted small mt-5 pt-3 border-top",
-    )
-
-
 def legend_item(state: str) -> html.Div:
-    swatch_style = {
-        "display": "inline-block",
-        "width": "1.1rem",
-        "height": "1.1rem",
-        "marginRight": "0.5rem",
-        "verticalAlign": "middle",
-        "borderRadius": "2px",
-        **theme.STATE_SWATCH_STYLE[state],
-    }
+    """One legend entry: the swatch in the state's mark style, then its label."""
+    mark = theme.STATE_MARKS[state]
     return html.Div(
         [
-            html.Span(style=swatch_style, **{"aria-hidden": "true"}),
+            html.Span(
+                className=f"legend__swatch legend__swatch--{mark}",
+                **{"aria-hidden": "true", "data-state": state},
+            ),
             html.Span(theme.STATE_LABELS[state]),
         ],
-        className="me-4 d-inline-block",
+        className="legend__item",
         id=f"legend-{state}",
+        role="listitem",
     )
 
 
@@ -221,10 +518,100 @@ def legend() -> html.Div:
     return html.Div(
         [legend_item(s) for s in ("alert", "no_alert", "not_assessed")],
         id="legend",
+        className="legend",
         role="list",
     )
 
 
-def page(*children) -> dbc.Container:
-    """The served page, in the order given, filling the viewport width."""
-    return dbc.Container(list(children), fluid=True, className="pb-5")
+def sources_section(entries: list[SourceEntry]) -> html.Section:
+    """The sources and methods list: each panel's source line, linked to its card."""
+    items = []
+    for entry in entries:
+        items.append(
+            html.Li(
+                [
+                    html.A(entry.explainer.title, href=f"#{entry.panel_id}"),
+                    source_line(entry.explainer, entry.retrieved_at),
+                ]
+            )
+        )
+    return section(SOURCES_TITLE, html.Ul(items, className="sources__list"), id="sources")
+
+
+def citation_text(cff: dict) -> str:
+    """A one-line citation from the fields of CITATION.cff."""
+    (author,) = cff["authors"]
+    initials = " ".join(f"{part[0]}." for part in author["given-names"].split())
+    year = str(cff["date-released"])[:4]
+    return (
+        f"{author['family-names']}, {initials} ({year}). {cff['title']} "
+        f"(version {cff['version']}). https://doi.org/{cff['doi']}"
+    )
+
+
+def footer(build: BuildInfo | None = None) -> html.Footer:
+    """The cite block, the maintainer, licence and cite lines, the report link, the build."""
+    cite = html.Div(
+        [
+            html.A(
+                [
+                    html.Span("DOI", className="doi-badge__label"),
+                    html.Span(CONCEPT_DOI, className="doi-badge__value"),
+                ],
+                href=CITATION_URL,
+                className="doi-badge",
+            ),
+            html.Button(COPY_CITATION_LABEL, id="copy-citation", className="btn", type="button"),
+            html.Span(id="copy-status", className="footer__status", **{"aria-live": "polite"}),
+        ],
+        id="cite",
+        className="footer__cite",
+    )
+    maintainer = html.P(
+        [
+            "El Niño Atlas is maintained by ",
+            html.A(MAINTAINER, href=MAINTAINER_URL),
+            f", {AFFILIATION}. ORCID: ",
+            html.A(ORCID_URL, href=ORCID_URL),
+        ],
+        className="footer__line",
+    )
+    licence = html.P(
+        [
+            "Code: MIT licence, on ",
+            html.A("GitHub", href=REPOSITORY_URL),
+            ". Data: licence stated with each panel.",
+        ],
+        className="footer__line",
+    )
+    cite_line = html.P(
+        ["Cite: ", html.A(CITATION_URL, href=CITATION_URL)], className="footer__line"
+    )
+    report = html.P(html.A(REPORT_LABEL, href=ISSUES_URL), className="footer__line footer__report")
+    children: list = [cite, maintainer, licence, cite_line, report]
+    if build is not None:
+        children.append(
+            html.P(
+                [
+                    "Build ",
+                    html.Code(build.short, title=build.sha),
+                    f", {build.built_at}",
+                ],
+                id="build-info",
+                className="footer__line footer__build",
+            )
+        )
+    return html.Footer(children, id="footer", className="footer")
+
+
+def page(*children, main: tuple = ()) -> html.Div:
+    """The served page: ``children`` before the main column, ``main`` inside it.
+
+    ``children`` hold the stores, the skip link, the navigation and the
+    hero; ``main`` holds the sections and cards. The footer follows.
+    """
+    return html.Div(
+        [*children, html.Main(list(main), id="main", className="main", tabIndex="-1")],
+        className="atlas-page",
+        id="atlas-page",
+    )

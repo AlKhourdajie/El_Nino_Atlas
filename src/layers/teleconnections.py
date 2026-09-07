@@ -53,12 +53,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 from dash import html
 
-from src.layout import section
-from src.layout.explainer import Explainer, render_explainer
+from src import theme
+from src.layout import card, figure_block
+from src.layout.explainer import Explainer, lede
 
 SOURCE_ID = "noaa_cpc_enso_impacts_schematic"
 SEASON = "DJF"
@@ -90,6 +90,9 @@ IMAGE_STYLE: dict[str, str] = {
     "height": "auto",
     "display": "block",
 }
+# The file's pixel size, so the browser reserves the space before the image loads.
+IMAGE_WIDTH = 940
+IMAGE_HEIGHT = 1215
 PANEL_TITLE = "Where El Niño usually matters: draft schematic"
 # The id of the empty container ``app.build_page`` reserves for this layer.
 PANEL_ID = "panel-teleconnections"
@@ -295,11 +298,11 @@ def build_figure(geojson: dict) -> go.Figure:
         geo={
             "projection": {"type": "natural earth", "rotation": {"lon": 160}},
             "showland": True,
-            "landcolor": "#E9E4DB",
+            "landcolor": theme.LIGHT["grid"],
             "showocean": True,
-            "oceancolor": "#D7E3EC",
+            "oceancolor": theme.LIGHT["bg"],
             "showcoastlines": True,
-            "coastlinecolor": "#8A867E",
+            "coastlinecolor": theme.LIGHT["muted"],
             "coastlinewidth": 0.6,
             "showcountries": False,
             "showlakes": False,
@@ -359,26 +362,24 @@ def explainer() -> Explainer:
 def build_image_panel(
     image_src: str = IMAGE_URL_PATH, retrieved_at: str | None = IMAGE_RETRIEVED_AT
 ) -> html.Section:
-    """The draft layer as shown on the page: the schematic image beside its explainer.
+    """The draft layer as shown on the page: the schematic image in the page's card shape.
 
-    One section in the page's panel shape: the heading carries the word
-    draft, the image fills its column and keeps its aspect ratio, and the
-    explainer sits beside it on wide screens and below it on narrow ones.
-    ``image_src`` is the URL the app serves the asset from; the default is
-    Dash's standard assets path, and ``app.get_asset_url(IMAGE_ASSET)``
-    gives the same file under any other prefix.
+    The card title carries the word draft, the image fills the card's
+    width and keeps its aspect ratio, and the explainer surrounds it as
+    on every other card. ``image_src`` is the URL the app serves the
+    asset from; the default is Dash's standard assets path, and
+    ``app.get_asset_url(IMAGE_ASSET)`` gives the same file under any
+    other prefix.
     """
     image = html.Img(
         src=image_src,
         alt=IMAGE_ALT,
         style=IMAGE_STYLE,
-        className="mb-3",
+        width=str(IMAGE_WIDTH),
+        height=str(IMAGE_HEIGHT),
+        className="schematic",
         id="teleconnections-image",
     )
-    row = dbc.Row(
-        [
-            dbc.Col(image, xs=12, lg=7),
-            dbc.Col(render_explainer(explainer(), retrieved_at), xs=12, lg=5),
-        ]
-    )
-    return section(PANEL_TITLE, row, id=PANEL_ID)
+    record = explainer()
+    content = figure_block(image, lede(record), id=PANEL_ID)
+    return card(None, record, content, id=PANEL_ID, retrieved_at=retrieved_at)

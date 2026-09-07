@@ -1,13 +1,15 @@
-"""Tests for the layout package: captions and page builders."""
+"""Tests for the layout package: captions, page builders, cards and the footer."""
 
+from datetime import date
 from pathlib import Path
 
-import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 import yaml
 from dash import dcc, html
 
 from src import layout, theme
+from src.enso_events import Event
+from src.layers import enso_index
 from src.layout import captions
 from src.layout.explainer import Explainer
 from tests.support import component_ids, walk
@@ -18,7 +20,7 @@ README = ROOT / "README.md"
 CITATION = ROOT / "CITATION.cff"
 EXPLAINER = Explainer(
     title="Example panel",
-    what="What.",
+    what="What. More.",
     how="How.",
     why="Why.",
     not_shown="Not shown.",
@@ -49,9 +51,12 @@ def design_captions() -> list[str]:
     return design_blockquotes("## Caption guardrails")
 
 
-def line_text(paragraph: html.P) -> str:
-    """The text of a page line, each link flattened to its text."""
-    return "".join(c.children if isinstance(c, html.A) else c for c in paragraph.children)
+def line_text(paragraph) -> str:
+    """The text of a page line, each child component flattened to its text."""
+    children = paragraph.children
+    if isinstance(children, str):
+        return children
+    return "".join(line_text(c) if hasattr(c, "children") else c for c in children)
 
 
 def test_captions_are_verbatim_from_the_design_notes():
@@ -78,11 +83,11 @@ def test_opening_line_is_verbatim():
     header = layout.opening()
     (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
     assert lead.children == layout.OPENING
-    assert component_ids(header) == ["header", "maintainer", "opening"]
+    assert component_ids(header) == ["header", "maintainer", "opening", "scope"]
 
 
 def test_maintainer_line_sits_under_the_title_before_the_opening_line():
-    title, maintainer, lead = layout.opening().children
+    title, maintainer, lead, scope = layout.opening().children
     assert isinstance(title, html.H1) and title.children == layout.TITLE
     assert isinstance(maintainer, html.P) and maintainer.id == "maintainer"
     assert line_text(maintainer) == "Maintained by Alaa Al Khourdajie, Imperial College London."
@@ -92,11 +97,12 @@ def test_maintainer_line_sits_under_the_title_before_the_opening_line():
         "https://sites.google.com/site/akhourdajie/",
     )
     assert lead.id == "opening"
+    assert scope.id == "scope" and scope.children == layout.SCOPE
 
 
 def test_opening_carries_the_reading_line_directly_beneath_the_lead():
     header = layout.opening(READING)
-    assert component_ids(header) == ["header", "maintainer", "opening", "latest-reading"]
+    assert component_ids(header) == ["header", "maintainer", "opening", "latest-reading", "scope"]
     (line,) = [c for c in walk(header) if getattr(c, "id", None) == "latest-reading"]
     assert isinstance(line, html.P) and line.children == READING
     assert "latest-reading" not in component_ids(layout.opening(None))
@@ -107,6 +113,12 @@ def readme_paragraph(heading: str) -> str:
     text = README.read_text(encoding="utf-8")
     section = text.split(f"\n{heading}\n", 1)[1]
     return next(p.strip() for p in section.split("\n\n") if p.strip())
+
+
+def test_scope_line_is_a_readme_sentence():
+    text = README.read_text(encoding="utf-8")
+    assert layout.SCOPE in text
+    assert layout.SCOPE.endswith(".") and layout.SCOPE.count(". ") == 0
 
 
 def test_about_block_opens_the_readme_case_for_the_atlas():
@@ -141,15 +153,49 @@ def test_readme_names_the_maintainer_under_the_live_site_line():
     ) in text
 
 
-def test_panel_holds_stage_graph_and_explainer():
-    section = layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p")
+def test_nav_anchors_follow_the_page_order_and_carry_the_theme_toggle():
+    nav = layout.nav()
+    assert nav.id == "site-nav"
+    links = [(a.children, a.href) for a in walk(nav) if isinstance(a, html.A)]
+    assert links[0] == (layout.TITLE, "#header")
+    assert links[1:] == list(layout.NAV_ITEMS)
+    assert [href for _, href in layout.NAV_ITEMS] == [
+        "#panel-index",
+        "#panel-commodities",
+        "#panel-activations",
+        "#sources",
+        "#cite",
+    ]
+    (toggle,) = [c for c in walk(nav) if isinstance(c, html.Button)]
+    assert toggle.id == "theme-toggle"
+    assert layout.skip_link().href == "#main"
+
+
+def test_card_has_the_fixed_header_grammar():
+    section = layout.panel(
+        "Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p", graph_id="g"
+    )
     assert section.id == "p"
-    assert next(c for c in walk(section) if isinstance(c, html.H2)).children == "Forecast"
-    assert len([c for c in walk(section) if isinstance(c, dcc.Graph)]) == 1
+    header = section.children[0]
+    assert isinstance(header, html.Header)
+    stage, title, lede, source, method = header.children
+    assert stage.children == "Forecast" and stage.className == "card__stage"
+    assert isinstance(title, html.H2) and title.children == "Example panel"
+    assert title.id == "p-title"
+    assert lede.children == "What."
+    assert "retrieved 2026-09-05T17:00:00Z" in str(source)
+    assert isinstance(method, html.Details)
+    assert method.children[0].children == "Source and method"
+    (graph,) = [c for c in walk(section) if isinstance(c, dcc.Graph)]
+    assert graph.id == "g"
+    (figure,) = [c for c in walk(section) if isinstance(c, html.Figure)]
+    (caption,) = [c for c in walk(figure) if isinstance(c, html.Figcaption)]
+    assert caption.children == "What." and "visually-hidden" in caption.className
     rendered = str(section)
     assert "Example panel" in rendered
-    assert "retrieved 2026-09-05T17:00:00Z" in rendered
     assert layout.UNAVAILABLE_NOTICE not in rendered
+    body = [c for c in walk(section) if getattr(c, "className", None) == "card__body"]
+    assert len(body) == 1 and "More." in str(body[0])
 
 
 def test_unavailable_panel_shows_notice_and_explainer():
@@ -157,21 +203,34 @@ def test_unavailable_panel_shows_notice_and_explainer():
     assert not [c for c in walk(section) if isinstance(c, dcc.Graph)]
     (notice,) = [c for c in walk(section) if getattr(c, "role", None) == "status"]
     assert notice.children == layout.UNAVAILABLE_NOTICE
-    assert theme.STATE_COLOURS["not_assessed"] in notice.style["border"]
     rendered = str(section)
     assert "Example panel" in rendered
     assert "retrieved" not in rendered
 
 
-def test_composite_panel_holds_the_callers_column_beside_the_explainer():
-    column = [html.Div(id="first"), html.Div(id="second")]
-    section = layout.composite_panel("Anticipatory action", EXPLAINER, column, id="p")
-    assert section.id == "p"
-    assert (
-        next(c for c in walk(section) if isinstance(c, html.H2)).children == "Anticipatory action"
+def test_error_panel_names_the_source_and_the_error():
+    section = layout.error_panel(
+        "Forecast", EXPLAINER, id="p", source="Example source (x)", error="ValueError: bad"
     )
+    (banner,) = [c for c in walk(section) if getattr(c, "role", None) == "alert"]
+    rendered = str(banner)
+    assert layout.ERROR_PREFIX in rendered
+    assert "Example source (x)" in rendered and "ValueError: bad" in rendered
+    assert not [c for c in walk(section) if isinstance(c, dcc.Graph)]
+    assert layout.UNAVAILABLE_NOTICE not in str(section)
+
+
+def test_composite_panel_holds_the_callers_column_and_beneath_components():
+    column = html.Div([html.Div(id="first"), html.Div(id="second")])
+    table = html.Table(id="wide")
+    section = layout.composite_panel(
+        "Anticipatory action", EXPLAINER, column, id="p", beneath=(table,)
+    )
+    assert section.id == "p"
+    assert section.children[0].children[0].children == "Anticipatory action"
     ids = component_ids(section)
-    assert ids.index("first") < ids.index("second")
+    assert ids.index("first") < ids.index("second") < ids.index("wide")
+    assert section.children[-1] is table
     rendered = str(section)
     assert "Example panel" in rendered
     assert "retrieved" not in rendered
@@ -179,66 +238,98 @@ def test_composite_panel_holds_the_callers_column_beside_the_explainer():
     assert "retrieved 2026-09-07" in str(stamped)
 
 
-def test_composite_panel_places_beneath_components_after_the_row_at_full_width():
-    table = html.Table(id="wide")
-    section = layout.composite_panel(
-        "Stage", EXPLAINER, [html.Div(id="first")], id="p", beneath=(table,)
-    )
-    (row,) = [c for c in section.children if isinstance(c, dbc.Row)]
-    assert "first" in component_ids(row) and "wide" not in component_ids(row)
-    assert section.children[-1] is table
-
-
 def test_container_is_empty_with_its_id():
     empty = layout.container("panel-activations")
     assert empty.id == "panel-activations" and not empty.children
 
 
+def footer_lines(footer) -> list[str]:
+    return [line_text(p) for p in footer.children if isinstance(p, html.P)]
+
+
 def test_footer_states_maintainer_licences_and_citation():
     footer = layout.footer()
     assert footer.id == "footer"
-    assert [line_text(p) for p in footer.children] == [
+    assert footer_lines(footer)[:3] == [
         "El Niño Atlas is maintained by Alaa Al Khourdajie, Imperial College London. "
         "ORCID: https://orcid.org/0000-0003-1376-7529",
         "Code: MIT licence, on GitHub. Data: licence stated with each panel.",
         "Cite: https://doi.org/10.5281/zenodo.22644790",
     ]
-    assert [(a.children, a.href) for a in walk(footer) if isinstance(a, html.A)] == [
+    anchors = [(a.children, a.href) for a in walk(footer) if isinstance(a, html.A)]
+    assert anchors[1:] == [
         ("Alaa Al Khourdajie", "https://sites.google.com/site/akhourdajie/"),
         ("https://orcid.org/0000-0003-1376-7529", "https://orcid.org/0000-0003-1376-7529"),
         ("GitHub", "https://github.com/AlKhourdajie/El_Nino_Atlas"),
         ("https://doi.org/10.5281/zenodo.22644790", "https://doi.org/10.5281/zenodo.22644790"),
+        ("Report a discrepancy", "https://github.com/AlKhourdajie/El_Nino_Atlas/issues"),
     ]
+    badge = anchors[0]
+    assert badge[1] == layout.CITATION_URL
     citation = yaml.safe_load(CITATION.read_text(encoding="utf-8"))
     (author,) = citation["authors"]
     assert layout.ORCID_URL == author["orcid"]
     assert layout.REPOSITORY_URL == citation["repository-code"]
+    assert layout.CONCEPT_DOI == citation["doi"]
+
+
+def test_footer_cite_block_and_build_line():
+    footer = layout.footer(layout.BuildInfo("0123456789abcdef", "2026-09-07 21:00 UTC"))
+    cite = footer.children[0]
+    assert cite.id == "cite"
+    ids = component_ids(cite)
+    assert "copy-citation" in ids and "copy-status" in ids
+    (build,) = [c for c in walk(footer) if getattr(c, "id", None) == "build-info"]
+    assert line_text(build) == "Build 0123456, 2026-09-07 21:00 UTC"
+    assert "build-info" not in component_ids(layout.footer())
+
+
+def test_citation_text_reads_the_citation_file():
+    cff = yaml.safe_load(CITATION.read_text(encoding="utf-8"))
+    text = layout.citation_text(cff)
+    assert text == (
+        "Al Khourdajie, A. (2026). El Niño Atlas (version 0.2.0). "
+        "https://doi.org/10.5281/zenodo.22644790"
+    )
 
 
 def test_page_copy_follows_the_rules():
-    footer_lines = [line_text(p) for p in layout.footer().children]
-    lines = (layout.OPENING, line_text(layout.maintainer_line()), *layout.ABOUT, *footer_lines)
+    footer_lines_ = footer_lines(layout.footer())
+    lines = (
+        layout.OPENING,
+        line_text(layout.maintainer_line()),
+        layout.SCOPE,
+        *layout.ABOUT,
+        *footer_lines_,
+        *(label for label, _ in layout.NAV_ITEMS),
+        layout.TIME_RANGE_LABEL,
+        layout.BANDS_LABEL,
+        layout.EVENT_SELECT_LABEL,
+    )
     for text in lines:
         assert "—" not in text
 
 
-def test_graph_config_suits_touch_screens():
-    assert layout.GRAPH_CONFIG == {
-        "responsive": True,
-        "displayModeBar": False,
-        "scrollZoom": False,
-    }
+def test_graph_config_trims_the_mode_bar_and_keeps_scroll_zoom_off():
+    assert layout.GRAPH_CONFIG["responsive"] is True
+    assert layout.GRAPH_CONFIG["scrollZoom"] is False
+    assert layout.GRAPH_CONFIG["displaylogo"] is False
+    assert "toImage" in layout.GRAPH_CONFIG["modeBarButtonsToRemove"]
+    assert "lasso2d" in layout.GRAPH_CONFIG["modeBarButtonsToRemove"]
+    # Nothing leaves the page: the cloud share button plotly.js 3.8 adds stays off.
+    assert layout.GRAPH_CONFIG["showSendToCloud"] is False
+    assert "sendChartToCloud" in layout.GRAPH_CONFIG["modeBarButtonsToRemove"]
+    assert layout.MAP_CONFIG["showSendToCloud"] is False
     plain = layout.graph(go.Figure())
     assert plain.config == layout.GRAPH_CONFIG
     assert getattr(plain, "id", None) is None
     named = layout.graph(go.Figure(), id="activations-map", height=300)
-    assert named.id == "activations-map" and named.config == layout.GRAPH_CONFIG
-    assert named.style == {"height": "300px"}
+    assert named.id == "activations-map" and named.style == {"height": "300px"}
+    assert layout.map_config("/assets/topojson/")["topojsonURL"] == "/assets/topojson/"
+    assert layout.map_config("/x/")["displayModeBar"] is False
 
 
 def test_graph_container_takes_the_figure_height():
-    # Dash otherwise sizes the container to its column, so a figure beside a
-    # long explainer would stretch with it on a wide screen.
     assert layout.FIGURE_HEIGHT == theme.RESPONSIVE_LAYOUT["height"] == 420
     assert layout.graph(go.Figure()).style == {"height": "420px"}
     assert getattr(layout.graph(go.Figure(), height=None), "style", None) is None
@@ -247,16 +338,78 @@ def test_graph_container_takes_the_figure_height():
     assert graph.style == {"height": "420px"}
 
 
-def test_every_column_fills_a_narrow_screen():
-    sections = (
-        layout.panel("Forecast", EXPLAINER, go.Figure(), "2026-09-05T17:00:00Z", id="p"),
-        layout.unavailable_panel("Forecast", EXPLAINER, id="q"),
-        layout.composite_panel("Stage", EXPLAINER, [layout.legend(), html.Div()], id="r"),
+def test_legend_pairs_each_state_with_a_mark_style():
+    legend = layout.legend()
+    assert legend.id == "legend" and legend.role == "list"
+    items = {item.id: item for item in legend.children}
+    assert list(items) == ["legend-alert", "legend-no_alert", "legend-not_assessed"]
+    for state, item in zip(("alert", "no_alert", "not_assessed"), legend.children, strict=True):
+        swatch, label = item.children
+        assert f"legend__swatch--{theme.STATE_MARKS[state]}" in swatch.className
+        assert label.children == theme.STATE_LABELS[state]
+    assert theme.STATE_MARKS["not_assessed"] == "hatched"
+    assert theme.STATE_MARKS["no_alert"] == "outlined"
+
+
+def test_download_toolbar_and_sources_section():
+    toolbar = layout.download_toolbar("index")
+    ids = component_ids(toolbar)
+    assert ids == ["csv-index", "png-index", "svg-index", "export-sink-index"]
+    assert layout.download_toolbar("map", csv=False).children[1].id == "png-map"
+    sources = layout.sources_section(
+        [layout.SourceEntry("panel-index", EXPLAINER, "2026-09-05T17:00:00Z")]
     )
-    for section in sections:
-        columns = [c for c in walk(section) if isinstance(c, dbc.Col)]
-        assert columns and all(column.xs == 12 for column in columns)
+    assert sources.id == "sources"
+    assert sources.children[0].children == layout.SOURCES_TITLE
+    rendered = str(sources)
+    assert "#panel-index" in rendered and "retrieved 2026-09-05T17:00:00Z" in rendered
 
 
-def test_page_container_is_fluid():
-    assert layout.page().fluid is True
+def test_time_controls_and_event_options():
+    events = [
+        Event(
+            "el_nino",
+            date(1997, 5, 1),
+            date(1998, 4, 1),
+            ("MAM 1997", "MAM 1998"),
+            2.28,
+            date(1997, 11, 1),
+        ),
+        Event(
+            "la_nina",
+            date(2026, 4, 1),
+            None,
+            ("AMJ 2026", "JJA 2026"),
+            -1.0,
+            date(2026, 6, 1),
+            True,
+        ),
+    ]
+    options = layout.event_options(events, date(2026, 9, 1))
+    assert [o["label"] for o in options] == [
+        "El Niño, MAM 1997 to MAM 1998",
+        "La Niña, AMJ 2026 to JJA 2026, provisional",
+    ]
+    assert options[0]["value"] == "1996-04-01,1999-06-01"
+    assert options[1]["value"] == "2025-03-01,2027-09-01"
+    controls = layout.time_controls(enso_index.RANGE_BUTTONS, options)
+    assert controls.id == "time-controls"
+    ids = component_ids(controls)
+    assert ["range-all", "range-30", "range-5", "event-select", "bands-toggle"] == [
+        i for i in ids if i not in ("time-controls", "time-range-label")
+    ]
+    buttons = [c for c in walk(controls) if isinstance(c, html.Button)]
+    assert [b.children for b in buttons[:3]] == ["From 1950", "30 years", "5 years"]
+    (select,) = [c for c in walk(controls) if isinstance(c, html.Select)]
+    assert [o.value for o in select.children] == ["", options[0]["value"], options[1]["value"]]
+    toggle = buttons[3]
+    assert toggle.id == "bands-toggle" and toggle.children[1] == layout.BANDS_LABEL
+    assert getattr(toggle, "aria-pressed") == "true"
+
+
+def test_page_wraps_main_in_a_landmark():
+    page = layout.page(html.Div(id="before"), main=(html.Div(id="inside"),))
+    assert page.id == "atlas-page"
+    (main,) = [c for c in walk(page) if isinstance(c, html.Main)]
+    assert main.id == "main" and "inside" in component_ids(main)
+    assert "before" not in component_ids(main)

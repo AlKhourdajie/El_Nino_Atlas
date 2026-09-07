@@ -1,30 +1,40 @@
 """Colour tokens and Plotly templates for the El Niño Atlas.
 
+Every value here is read from ``src/plotly_template.py``, which
+``scripts/build_tokens.py`` generates from ``design/tokens.json``, the
+single source of truth for the design system. Edit the tokens, rebuild,
+and this module follows.
+
 Three-state convention
 ----------------------
 Every layer classifies each unit as exactly one of ``alert``, ``no_alert``
 or ``not_assessed``. The last is the absence of an assessment, not a
 finding of "nothing happening", so it must never share a colour with
 ``no_alert``. ``STATE_COLOURS`` is the single place where those colours
-live; ``tests/test_app_smoke.py`` asserts the two remain distinct.
+live; ``tests/test_app_smoke.py`` asserts the two remain distinct. Each
+state also has a mark style in ``STATE_MARKS`` (filled, outlined,
+hatched), so the legend never relies on colour alone.
 
 ENSO phase shading
 ------------------
-Time-series panels shade El Niño and La Niña seasons behind their lines.
-A shaded season is a classification of the index, not an alert, so
+Time-series panels shade El Niño and La Niña seasons behind their lines
+as low-opacity bands in the Okabe-Ito orange and sky blue. A shaded
+season is a classification of the index, not an alert, so
 ``PHASE_COLOURS`` stays distinct from every state token
-(``tests/test_enso_index.py`` asserts this).
+(``tests/test_enso_index.py`` asserts this). The hues appear only as
+tints; outlines and labels on the bands use the muted ink.
 """
 
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from src.plotly_template import TEMPLATES, TOKENS
+
+_DATA = TOKENS["data"]
+_SCHEME = TOKENS["scheme"]
+
 # Semantic state tokens (shared by the dark and light templates).
-STATE_COLOURS: dict[str, str] = {
-    "alert": "#D1495B",  # warm red: an active alert or realised impact
-    "no_alert": "#3A7CA5",  # cool blue: assessed, no alert
-    "not_assessed": "#B8B2A7",  # warm neutral grey: no assessment available
-}
+STATE_COLOURS: dict[str, str] = dict(_DATA["state"])
 
 STATE_LABELS: dict[str, str] = {
     "alert": "Alert",
@@ -32,66 +42,77 @@ STATE_LABELS: dict[str, str] = {
     "not_assessed": "Not assessed",
 }
 
-# ``not_assessed`` additionally gets a hatched, dashed-outline swatch so the
-# distinction survives greyscale printing and colour-vision deficiency.
-STATE_SWATCH_STYLE: dict[str, dict[str, str]] = {
-    "alert": {"backgroundColor": STATE_COLOURS["alert"]},
-    "no_alert": {"backgroundColor": STATE_COLOURS["no_alert"]},
-    "not_assessed": {
-        "backgroundColor": "transparent",
-        "backgroundImage": (
-            "repeating-linear-gradient(45deg, "
-            f"{STATE_COLOURS['not_assessed']} 0 3px, transparent 3px 6px)"
-        ),
-        "border": f"1px dashed {STATE_COLOURS['not_assessed']}",
-    },
+# The mark style paired with each state: a filled swatch, an outlined
+# swatch and a hatched swatch with a dashed outline.
+STATE_MARKS: dict[str, str] = dict(_DATA["state_mark"])
+
+# Plotly marker symbols carrying the same distinction on maps.
+STATE_MARKER_SYMBOLS: dict[str, str] = {
+    "alert": "circle",
+    "no_alert": "circle-open",
+    "not_assessed": "square",
 }
 
-# Base palettes.
-DARK = {
-    "bg": "#14171C",
-    "panel": "#1E232B",
-    "text": "#E6E1D8",
-    "muted": "#9A948A",
-    "grid": "#2C333D",
+# Base palettes: the chrome of each scheme.
+LIGHT: dict[str, str] = {
+    "bg": _SCHEME["light"]["paper"],
+    "panel": _SCHEME["light"]["surface"],
+    "text": _SCHEME["light"]["ink"],
+    "muted": _SCHEME["light"]["ink_muted"],
+    "grid": _SCHEME["light"]["rule"],
 }
-LIGHT = {
-    "bg": "#FBFAF7",
-    "panel": "#FFFFFF",
-    "text": "#1F2328",
-    "muted": "#6B665E",
-    "grid": "#E4E0D8",
+DARK: dict[str, str] = {
+    "bg": _SCHEME["dark"]["paper"],
+    "panel": _SCHEME["dark"]["surface"],
+    "text": _SCHEME["dark"]["ink"],
+    "muted": _SCHEME["dark"]["ink_muted"],
+    "grid": _SCHEME["dark"]["rule"],
 }
 
 # Ordered categorical sequence for non-state series.
-SERIES = ["#3A7CA5", "#D1495B", "#EDAE49", "#5E8C61", "#7B6D8D", "#8C4A2F"]
+SERIES: list[str] = list(_DATA["series"])
 
 # ENSO phase shading: warm for El Niño, cool and lighter for La Niña.
 PHASE_COLOURS: dict[str, str] = {
-    "el_nino": "#E8823F",
-    "la_nina": "#5FA8D3",
+    "el_nino": _DATA["phase"]["el_nino"],
+    "la_nina": _DATA["phase"]["la_nina"],
 }
-PHASE_OPACITY: dict[str, float] = {"el_nino": 0.22, "la_nina": 0.12}
+PHASE_NEUTRAL: str = _DATA["phase"]["neutral"]
+PHASE_OPACITY: dict[str, float] = dict(_DATA["phase_opacity"])
 PHASE_LABELS: dict[str, str] = {"el_nino": "El Niño season", "la_nina": "La Niña season"}
+# A La Niña band carries a dotted outline so that the two phases differ
+# in more than hue; an El Niño band has none.
+PHASE_OUTLINE: dict[str, str | None] = dict(_DATA["phase_outline"])
 
-# Reference lines and secondary series sit back from the primary line.
-MUTED_LINE = "#9A948A"
-INDEX_LINE_COLOURS: dict[str, str] = {"primary": SERIES[0], "secondary": MUTED_LINE}
-THRESHOLD_LINE: dict[str, str | float] = {"color": MUTED_LINE, "width": 1, "dash": "dot"}
+# Reference lines, outlines and secondary series sit back from the primary line.
+MUTED_LINE: str = _DATA["index"]["secondary"]
+BAND_OUTLINE: str = LIGHT["muted"]
+INDEX_LINE_COLOURS: dict[str, str] = {
+    "primary": _DATA["index"]["primary"],
+    "secondary": _DATA["index"]["secondary"],
+}
+THRESHOLD_LINE: dict[str, str | float] = {"color": _DATA["threshold"], "width": 1, "dash": "dot"}
+MAP_BORDER: str = _DATA["map"]["border_light"]
 
 # Shared figure layout for narrow screens: the figure fills its column
 # with no fixed width, the legend runs horizontally below the plot, and
 # the margins stay small. The height is fixed so the plot keeps its shape
-# as the column narrows; Plotly expands the margins for tick labels, the
-# range buttons and the legend as needed.
+# as the column narrows; Plotly expands the margins for tick labels and
+# the legend as needed.
 RESPONSIVE_LAYOUT: dict = {
     "autosize": True,
-    "height": 420,
+    "height": TOKENS["layout"]["figure_height_px"],
     "margin": {"l": 44, "r": 12, "t": 36, "b": 8},
     "legend": {"orientation": "h", "yanchor": "top", "y": -0.12, "xanchor": "left", "x": 0},
+    # Dash redraws a figure from its stored copy after every interaction it
+    # reports; a fixed uirevision makes plotly.js keep the reader's zoom and
+    # legend choices across those redraws.
+    "uirevision": "atlas",
 }
+UI_REVISION: str = RESPONSIVE_LAYOUT["uirevision"]
+MAP_HEIGHT: int = TOKENS["layout"]["map_height_px"]
 
-FONT_FAMILY = "Inter, 'Helvetica Neue', Arial, sans-serif"
+FONT_FAMILY: str = TEMPLATES["light"]["layout"]["font"]["family"]
 
 TEMPLATE_DARK = "atlas_dark"
 TEMPLATE_LIGHT = "atlas_light"
@@ -104,31 +125,13 @@ def rgba(hex_colour: str, alpha: float) -> str:
     return f"rgba({red},{green},{blue},{alpha})"
 
 
-def _make_template(palette: dict[str, str]) -> go.layout.Template:
-    axis = {
-        "gridcolor": palette["grid"],
-        "zerolinecolor": palette["grid"],
-        "linecolor": palette["grid"],
-        "tickcolor": palette["muted"],
-        "title": {"font": {"color": palette["muted"]}},
-    }
-    return go.layout.Template(
-        layout=go.Layout(
-            paper_bgcolor=palette["bg"],
-            plot_bgcolor=palette["panel"],
-            font={"family": FONT_FAMILY, "color": palette["text"], "size": 13},
-            colorway=SERIES,
-            xaxis=axis,
-            yaxis=axis,
-            legend={"bgcolor": "rgba(0,0,0,0)"},
-            margin={"l": 48, "r": 24, "t": 48, "b": 40},
-            hoverlabel={"font": {"family": FONT_FAMILY}},
-        )
-    )
+def template(scheme: str) -> go.layout.Template:
+    """The Plotly template for ``scheme`` (``light`` or ``dark``)."""
+    return go.layout.Template(layout=TEMPLATES[scheme]["layout"])
 
 
 def register_templates() -> None:
     """Register ``atlas_dark`` and ``atlas_light`` with Plotly (idempotent)."""
-    pio.templates[TEMPLATE_DARK] = _make_template(DARK)
-    pio.templates[TEMPLATE_LIGHT] = _make_template(LIGHT)
+    pio.templates[TEMPLATE_DARK] = template("dark")
+    pio.templates[TEMPLATE_LIGHT] = template("light")
     pio.templates.default = TEMPLATE_LIGHT

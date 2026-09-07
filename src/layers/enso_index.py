@@ -14,7 +14,14 @@ event is shaded from the first month of its first season to the end of
 the last month of its last season. An event whose ``end`` is ``None`` is
 shaded to the end of the last season in the frame. A provisional event
 has a dashed outline and the label "provisional". ``add_event_shading``
-is shared with the commodity panel.
+is shared with the commodity panel. The bands are low-opacity tints
+behind the lines: a La Niña band carries a dotted outline so that the
+phases differ in more than hue, and the hover text names the phase of
+every shaded season, so colour never carries the phase alone.
+
+The range presets that used to sit in the figure live in the shared
+time-range bar that ``src.layout.time_controls`` builds from
+``RANGE_BUTTONS``; the two time-series panels share one x-axis window.
 
 ``latest_reading`` builds the one-line summary of the latest season that
 the page shows beneath its opening line: the season's months, the RONI
@@ -61,6 +68,7 @@ RANGE_BUTTONS: tuple[dict, ...] = (
 )
 
 _LEGEND_RANK = {"el_nino": 1010, "la_nina": 1020}
+PROVISIONAL_LABEL = "provisional"
 
 WHAT = (
     "The coloured line is the Relative Oceanic Niño Index (RONI) and the grey line "
@@ -199,7 +207,34 @@ def latest_reading(frame: pd.DataFrame, events: Iterable[Event]) -> str:
     return f"{READING_PREFIX} ({season_span(last['date'])}): {', '.join(readings)}."
 
 
-def _line(rows: pd.DataFrame, name: str, colour: str, width: float, rank: int) -> go.Scatter:
+def season_phases(events: Iterable[Event]) -> dict[str, str]:
+    """The phase label of every season an event covers, keyed by the season label.
+
+    A provisional run's seasons carry the word provisional after the
+    phase label, as the reading line does.
+    """
+    phases: dict[str, str] = {}
+    for event in events:
+        if event.phase not in theme.PHASE_COLOURS:
+            raise ValueError(f"unknown event phase {event.phase!r}")
+        label = theme.PHASE_LABELS[event.phase]
+        if event.provisional:
+            label = f"{label}, {PROVISIONAL_LABEL}"
+        for season in event.seasons:
+            phases[season] = label
+    return phases
+
+
+def _line(
+    rows: pd.DataFrame,
+    name: str,
+    colour: str,
+    width: float,
+    rank: int,
+    phases: dict[str, str],
+) -> go.Scatter:
+    seasons = [season_label(text) for text in rows["date"]]
+    customdata = [[season, phases.get(season, "")] for season in seasons]
     return go.Scatter(
         x=rows["date"].tolist(),
         y=rows["value"].tolist(),
@@ -207,8 +242,10 @@ def _line(rows: pd.DataFrame, name: str, colour: str, width: float, rank: int) -
         mode="lines",
         line={"color": colour, "width": width},
         legendrank=rank,
-        customdata=[season_label(text) for text in rows["date"]],
-        hovertemplate=f"{name} %{{y:.2f}} °C (%{{customdata}})<extra></extra>",
+        customdata=customdata,
+        hovertemplate=(
+            f"{name} %{{y:.2f}} °C (%{{customdata[0]}}) %{{customdata[1]}}<extra></extra>"
+        ),
     )
 
 
@@ -237,11 +274,13 @@ def add_event_shading(
     """Shade the seasons of every event in ``events`` whose phase is in ``phases``.
 
     Each phase gets one legend entry. ``until`` is the exclusive end of
-    the shading for an event whose ``end`` is ``None``. A provisional
-    event has a dashed outline and the label "provisional", anchored to
-    the top right corner of its shading with the text running left, so
-    that a run ending at the axis edge keeps its label inside the plot
-    area on a narrow screen. An event with a phase outside
+    the shading for an event whose ``end`` is ``None``. A band is a
+    low-opacity tint in the phase hue; a La Niña band adds a dotted
+    outline in the muted ink. A provisional event has a dashed outline
+    and the label "provisional", both in the muted ink, anchored to the
+    top right corner of its shading with the text running left, so that
+    a run ending at the axis edge keeps its label inside the plot area
+    on a narrow screen. An event with a phase outside
     ``theme.PHASE_COLOURS`` raises ``ValueError``.
     """
     shown: set[str] = set()
@@ -252,6 +291,7 @@ def add_event_shading(
             continue
         x0, x1 = shading_span(event, until)
         colour = theme.PHASE_COLOURS[event.phase]
+        outline = theme.PHASE_OUTLINE.get(event.phase)
         shape: dict = {
             "x0": x0,
             "x1": x1,
@@ -263,14 +303,17 @@ def add_event_shading(
             "legendrank": _LEGEND_RANK[event.phase],
             "showlegend": event.phase not in shown,
         }
+        if outline:
+            shape["line"] = {"color": theme.BAND_OUTLINE, "width": 1, "dash": outline}
         if event.provisional:
-            shape["line"] = {"color": colour, "width": 1.5, "dash": "dash"}
+            shape["line"] = {"color": theme.BAND_OUTLINE, "width": 1.5, "dash": "dash"}
             shape["label"] = {
-                "text": "provisional",
+                "text": PROVISIONAL_LABEL,
                 "textposition": "top right",
                 "xanchor": "right",
                 "yanchor": "top",
-                "font": {"size": 11, "color": colour},
+                "padding": 6,
+                "font": {"size": 11, "color": theme.BAND_OUTLINE},
             }
         fig.add_vrect(**shape)
         shown.add(event.phase)
@@ -282,19 +325,26 @@ def build_figure(frame: pd.DataFrame, events: Iterable[Event]) -> go.Figure:
     ``frame`` is the ``noaa_oni`` contract frame holding the series
     ``RONI`` and ``ONI``; ``events`` are the records for the RONI series.
     The default view is the last ``DEFAULT_WINDOW_YEARS`` years, ending
-    with the last season in the frame; range buttons give the record
-    from 1950, the last 30 years and the last 5 years.
+    with the last season in the frame; the shared time-range bar gives
+    the record from 1950, the last 30 years, the last 5 years and every
+    event in the data.
     """
     validate_frame(frame)
+    events = list(events)
     primary = _series(frame, PRIMARY_SERIES)
     secondary = _series(frame, SECONDARY_SERIES)
     last_centre = pd.Timestamp(max(primary["date"].iloc[-1], secondary["date"].iloc[-1]))
     x_end = last_centre + pd.DateOffset(months=2)
     x_start = x_end - pd.DateOffset(years=DEFAULT_WINDOW_YEARS)
+    phases = season_phases(events)
 
     fig = go.Figure()
-    fig.add_trace(_line(secondary, SECONDARY_SERIES, theme.INDEX_LINE_COLOURS["secondary"], 1.2, 2))
-    fig.add_trace(_line(primary, PRIMARY_SERIES, theme.INDEX_LINE_COLOURS["primary"], 2.2, 1))
+    fig.add_trace(
+        _line(secondary, SECONDARY_SERIES, theme.INDEX_LINE_COLOURS["secondary"], 1.2, 2, phases)
+    )
+    fig.add_trace(
+        _line(primary, PRIMARY_SERIES, theme.INDEX_LINE_COLOURS["primary"], 2.2, 1, phases)
+    )
     add_event_shading(fig, events, until=x_end.date())
     fig.add_hline(
         y=THRESHOLD_C,
@@ -306,12 +356,7 @@ def build_figure(frame: pd.DataFrame, events: Iterable[Event]) -> go.Figure:
     )
     fig.add_hline(y=-THRESHOLD_C, line=theme.THRESHOLD_LINE)
 
-    fig.update_xaxes(
-        type="date",
-        range=[_iso(x_start), _iso(x_end)],
-        rangeselector={"buttons": list(RANGE_BUTTONS)},
-        hoverformat="%b %Y",
-    )
+    fig.update_xaxes(type="date", range=[_iso(x_start), _iso(x_end)], hoverformat="%b %Y")
     fig.update_yaxes(title_text="Anomaly (°C)", zeroline=True)
     fig.update_layout(hovermode="x unified", **theme.RESPONSIVE_LAYOUT)
     return fig

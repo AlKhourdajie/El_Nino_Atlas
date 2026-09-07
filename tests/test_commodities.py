@@ -148,6 +148,7 @@ def test_figure_layout_suits_narrow_screens(figure):
     assert figure.layout.legend.y < 0
     margin = figure.layout.margin
     assert max(margin.l, margin.r, margin.t, margin.b) <= 48
+    assert figure.layout.uirevision == theme.UI_REVISION
 
 
 def test_explainer_contract():
