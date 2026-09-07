@@ -1,6 +1,6 @@
 # Provenance: NOAA Climate Prediction Center El Niño impacts schematic
 
-The file beside this note, `noaa_cpc_elnino_impacts_djf.jpg`, is the
+The file beside this note, `noaa_cpc_elnino_impacts.jpg`, is the
 schematic the draft teleconnection layer shows on the page. It is
 byte-identical to the image retrieved from the publisher; only the file
 name differs, to state the content and the actual format. Nothing was
@@ -18,8 +18,8 @@ cropped, resized or re-encoded.
 | Format | JPEG, 940 by 1215 pixels, RGB; the server names the file `.gif` and serves it as `image/gif` |
 | Server Last-Modified | Wed, 07 Nov 2012 13:57:16 GMT |
 | Licence | US Government work, public domain |
-| Attribution | Source: NOAA Climate Prediction Center, El Niño temperature and precipitation patterns |
-| Registry | `src/sources.yaml` has no entry for this schematic yet; `noaa_oni` covers a different dataset |
+| Attribution | Source: NOAA Climate Prediction Center, typical El Niño temperature and precipitation patterns |
+| Registry | `noaa_cpc_enso_impacts_schematic` in `src/sources.yaml`: status approved, redistribution yes, licence_id LicenseRef-US-PD |
 
 The retrieval record is also kept as `noaa_cpc_elnino_impacts_warm.retrieval.json`
 in the private `local/candidates/` folder of the main clone, beside the
