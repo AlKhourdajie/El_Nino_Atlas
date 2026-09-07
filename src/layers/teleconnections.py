@@ -3,11 +3,16 @@
 Provenance
 ----------
 publisher:      NOAA Climate Prediction Center (NCEP/NWS)
-dataset:        "Warm Episode Relationships, December - February", the El
-                Niño panel of the typical-impacts schematic (warm.gif) on
-                the El Niño temperature and precipitation patterns page
+dataset:        "Warm Episode Relationships", the typical-impacts schematic
+                (warm.gif) on the El Niño temperature and precipitation
+                patterns page: December to February in the upper panel,
+                June to August in the lower panel
 url:            https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml
 image:          https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/warm.gif
+asset:          assets/teleconnections/noaa_cpc_elnino_impacts_djf.jpg,
+                byte-identical to the retrieved image (a JPEG despite the
+                .gif name), retrieved 2026-09-07T14:36:16Z; sha256 and the
+                full record in assets/teleconnections/PROVENANCE.md
 licence:        US Government work, public domain
 redistribution: yes
 attribution:    "Schematic after NOAA Climate Prediction Center, El Niño
@@ -22,12 +27,18 @@ Role in the atlas
 -----------------
 Context layer beneath the impact layers: where El Niño has tended to
 shift rainfall and temperature in past December to February seasons.
-The polygons are approximate outlines drawn by hand from the schematic,
-carried in a GeoJSON FeatureCollection in which every feature has the
-properties ``signal``, ``season`` ("DJF"), ``basis`` ("NOAA CPC
-schematic, DJF") and ``note``. Nothing is computed from data.
 
-The layer draws what the collection says and raises on anything it
+The page shows the schematic image itself, through ``build_image_panel``,
+because it is a US government work and the most faithful form of the
+draft. A set of approximate polygons drawn by hand from the schematic
+exists as a draft mask in the main clone's private ``local/candidates/``
+folder (a GeoJSON FeatureCollection in which every feature has the
+properties ``signal``, ``season`` ("DJF"), ``basis`` ("NOAA CPC
+schematic, DJF") and ``note``). That mask is not yet rendered.
+``build_figure`` and ``GRAPH_CONFIG`` stay in place to draw it once it is
+approved. Nothing is computed from data.
+
+``build_figure`` draws what the collection says and raises on anything it
 cannot draw faithfully: an unknown signal, a missing note, a geometry
 with holes or a coordinate off the globe. It classifies areas by
 tendency rather than by the three alert states of ``src.theme``, and its
@@ -42,9 +53,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
+from dash import html
 
-from src.layout.explainer import Explainer
+from src.layout import panel
+from src.layout.explainer import Explainer, render_explainer
 
 SEASON = "DJF"
 BASIS = "NOAA CPC schematic, DJF"
@@ -54,7 +68,27 @@ SOURCE_URL = "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocyc
 IMAGE_URL = "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/warm.gif"
 LICENCE_LABEL = "US Government work, public domain"
 
+# The schematic as served on the page: Dash serves ``assets/`` at ``/assets/``.
+IMAGE_ASSET = "teleconnections/noaa_cpc_elnino_impacts_djf.jpg"
+IMAGE_URL_PATH = f"/assets/{IMAGE_ASSET}"
+IMAGE_SHA256 = "849985b5dfc4c951ea7206da135c16d7a4c313addf7f77b071d54c12104d26c5"
+IMAGE_RETRIEVED_AT = "2026-09-07T14:36:16Z"
+IMAGE_ALT = (
+    "National Oceanic and Atmospheric Administration Climate Prediction Center schematic of "
+    "typical El Niño impacts: shaded areas where past El Niño events tended to bring wetter, "
+    "drier, warmer or cooler conditions, December to February in the upper panel and June to "
+    "August in the lower panel."
+)
+IMAGE_STYLE: dict[str, str] = {
+    "width": "100%",
+    "maxWidth": "100%",
+    "height": "auto",
+    "display": "block",
+}
+PANEL_TITLE = "Teleconnections, December to February: draft schematic"
+
 ROOT = Path(__file__).resolve().parent.parent.parent
+IMAGE_FILE = ROOT / "assets" / "teleconnections" / "noaa_cpc_elnino_impacts_djf.jpg"
 CURATED_PATH = (
     ROOT / "data" / "curated" / "teleconnections" / "teleconnections_djf_schematic.geojson"
 )
@@ -275,19 +309,19 @@ def explainer() -> Explainer:
         title="El Niño teleconnections, December to February (draft)",
         what=(
             "Where El Niño has tended to shift rainfall and temperature in past December to "
-            "February seasons. Each shaded area marks a tendency towards wetter, drier, warmer "
-            "or cooler conditions than normal, or a combination of two, as drawn on the "
-            "National Oceanic and Atmospheric Administration (NOAA) Climate Prediction Center "
-            "schematic of typical El Niño impacts."
+            "February seasons, on the schematic published by the National Oceanic and "
+            "Atmospheric Administration (NOAA) Climate Prediction Center and shown here as "
+            "retrieved. The upper panel gives December to February and the lower panel June to "
+            "August. Each shaded area marks a tendency towards wetter, drier, warmer or cooler "
+            "conditions than normal, or a combination of two."
         ),
         how=(
-            "Schematic after the NOAA Climate Prediction Center, whose page states that El Niño "
+            "Schematic by the NOAA Climate Prediction Center, whose page states that El Niño "
             "episodes are 'associated with increased rainfall across the east-central and "
             "eastern Pacific and with drier than normal conditions over northern Australia, "
             "Indonesia and the Philippines', and lists further regional tendencies for "
-            "December to February. The outlines here were drawn by hand from the December to "
-            "February panel of that schematic and are approximate. The source line below "
-            "links to the page."
+            "December to February. The image is shown as retrieved from that page, without "
+            "cropping or redrawing. The source line below links to the page."
         ),
         why=(
             "The impacts the other layers track begin with shifts in seasonal rainfall and "
@@ -301,13 +335,41 @@ def explainer() -> Explainer:
             "tendency, and a region can see the opposite sign in a given season. This draft "
             "carries no statistical test, no magnitude and no measure of confidence, and it "
             "will be replaced by computed composites. Unshaded areas carry no drawn tendency, "
-            "and the schematic makes no claim about them."
+            "and the schematic makes no claim about them. The page text lists Central America "
+            "as drier than normal in December to February, and the schematic draws no area for "
+            "it. The schematic draws a wetter area over the south-western United States, and "
+            "the page text has no line for it."
         ),
         source_name=SOURCE_NAME,
         source_url=SOURCE_URL,
         licence_label=LICENCE_LABEL,
         captions=(
-            "Draft schematic drawn by hand after the NOAA Climate Prediction Center panel for "
-            "December to February; the outlines are approximate and carry no statistical test.",
+            "Draft layer: the schematic is shown as published by the NOAA Climate Prediction "
+            "Center, with the December to February panel above the June to August panel; the "
+            "shaded areas are the publisher's own and carry no statistical test.",
         ),
+    )
+
+
+def build_image_panel(
+    image_src: str = IMAGE_URL_PATH, retrieved_at: str | None = IMAGE_RETRIEVED_AT
+) -> dbc.Card:
+    """The draft layer as shown on the page: the schematic image, then its explainer.
+
+    ``image_src`` is the URL the app serves the asset from; the default is
+    Dash's standard assets path, and ``app.get_asset_url(IMAGE_ASSET)``
+    gives the same file under any other prefix. The image fills the column
+    width and keeps its aspect ratio.
+    """
+    return panel(
+        PANEL_TITLE,
+        html.Img(
+            src=image_src,
+            alt=IMAGE_ALT,
+            style=IMAGE_STYLE,
+            className="mb-3",
+            id="teleconnections-image",
+        ),
+        render_explainer(explainer(), retrieved_at=retrieved_at),
+        id="teleconnections-panel",
     )
