@@ -6,12 +6,13 @@ unchanged; ``run.py`` imports the same object for local serving.
 ``build_page`` assembles the page along the forecast, action, impact
 spine: the opening line with the latest-reading line beneath it, the
 About block, the index panel, the activations container, the commodity
-panel, the teleconnections container and the footer. Each panel reads
-its snapshot through ``src.data_access``. A missing snapshot, the
-``FileNotFoundError`` that ``load_frame`` raises, renders the panel's
-explainer with a visible notice and omits the latest-reading line; every
-other error propagates. The commodity panel needs both snapshots,
-because its shading comes from the index events.
+panel, the teleconnection schematic panel and the footer. Each data
+panel reads its snapshot through ``src.data_access``. A missing
+snapshot, the ``FileNotFoundError`` that ``load_frame`` raises, renders
+the panel's explainer with a visible notice and omits the latest-reading
+line; every other error propagates. The commodity panel needs both
+snapshots, because its shading comes from the index events. The
+schematic panel shows a static asset and needs no snapshot.
 """
 
 import dash
@@ -19,7 +20,7 @@ import dash_bootstrap_components as dbc
 
 from src import data_access, layout, theme
 from src.enso_events import Event, enso_event_records
-from src.layers import commodities, enso_index
+from src.layers import commodities, enso_index, teleconnections
 
 EVENT = "The event"
 REALISED_IMPACT = "Realised impact"
@@ -54,8 +55,13 @@ def _commodity_panel(snapshot: tuple | None, events: list[Event] | None) -> obje
     )
 
 
-def build_page() -> dbc.Container:
-    """The page, from whichever snapshots exist at the time of the call."""
+def build_page(image_src: str = teleconnections.IMAGE_URL_PATH) -> dbc.Container:
+    """The page, from whichever snapshots exist at the time of the call.
+
+    ``image_src`` is the URL the app serves the teleconnection schematic
+    from. The module passes ``app.get_asset_url`` so that the image
+    follows whatever path prefix the deployment sets.
+    """
     index = _snapshot(enso_index.SOURCE_ID)
     events = None
     reading = None
@@ -70,7 +76,7 @@ def build_page() -> dbc.Container:
         _index_panel(index, events),
         layout.container("panel-activations"),
         _commodity_panel(prices, events),
-        layout.container("panel-teleconnections"),
+        teleconnections.build_image_panel(image_src),
         layout.footer(),
     )
 
@@ -82,6 +88,6 @@ app = dash.Dash(
     title=layout.TITLE,
     external_stylesheets=[dbc.themes.FLATLY],
 )
-app.layout = build_page()
+app.layout = build_page(image_src=app.get_asset_url(teleconnections.IMAGE_ASSET))
 
 server = app.server

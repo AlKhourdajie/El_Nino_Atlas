@@ -10,6 +10,7 @@ import pytest
 from dash import dcc, html
 
 from src import data_access, layout
+from src.layers import teleconnections
 from tests.support import RETRIEVED_AT, component_ids, index_frame, price_frame, walk
 
 ORDER = [
@@ -76,6 +77,7 @@ def reading_line(page) -> html.P | None:
 # The reading the synthetic index frame yields: the last run FMA to JJA 2026 has
 # five seasons, so it is not provisional.
 READING = "Latest three-month season (June to August 2026): RONI +1.20 °C, ONI +1.40 °C."
+SCHEMATIC = "Where El Niño usually matters: draft schematic"
 
 
 def test_app_imports_and_layout_builds():
@@ -99,13 +101,36 @@ def test_page_with_both_snapshots(monkeypatch):
     assert layout.UNAVAILABLE_NOTICE not in rendered
     assert rendered.count(f"retrieved {RETRIEVED_AT}") == 2
     assert len(graphs(page)) == 2
-    assert headings(page) == ["About", "The event", "Realised impact"]
+    assert headings(page) == ["About", "The event", "Realised impact", SCHEMATIC]
     assert reading_line(page).children == READING
     ids = component_ids(page)
     assert ids.index("latest-reading") == ids.index("opening") + 1
-    for id in ("panel-activations", "panel-teleconnections"):
-        (empty,) = [c for c in walk(page) if getattr(c, "id", None) == id]
-        assert isinstance(empty, html.Div) and not empty.children
+    (empty,) = [c for c in walk(page) if getattr(c, "id", None) == "panel-activations"]
+    assert isinstance(empty, html.Div) and not empty.children
+    assert_schematic_panel(page, teleconnections.IMAGE_URL_PATH)
+
+
+def assert_schematic_panel(page, image_src: str) -> None:
+    (schematic,) = [c for c in walk(page) if getattr(c, "id", None) == "panel-teleconnections"]
+    assert isinstance(schematic, html.Section)
+    assert next(c for c in walk(schematic) if isinstance(c, html.H2)).children == SCHEMATIC
+    (image,) = [c for c in walk(page) if isinstance(c, html.Img)]
+    assert image.src == image_src
+    assert image.alt == teleconnections.IMAGE_ALT
+    rendered = str(schematic)
+    assert teleconnections.SOURCE_URL in rendered
+    assert f"retrieved {teleconnections.IMAGE_RETRIEVED_AT}" in rendered
+
+
+def test_schematic_is_served_from_the_app_asset_url():
+    import app as app_module
+
+    served = app_module.app.get_asset_url(teleconnections.IMAGE_ASSET)
+    assert served == "/assets/teleconnections/noaa_cpc_elnino_impacts.jpg"
+    assert_schematic_panel(app_module.app.layout, served)
+    assert_schematic_panel(
+        app_module.build_page(image_src="/prefix/assets/x.jpg"), "/prefix/assets/x.jpg"
+    )
 
 
 def test_page_without_snapshots(monkeypatch):
@@ -116,7 +141,7 @@ def test_page_without_snapshots(monkeypatch):
     assert_in_spine_order(page)
     rendered = str(page)
     assert rendered.count(layout.UNAVAILABLE_NOTICE) == 2
-    assert "retrieved" not in rendered
+    assert f"retrieved {RETRIEVED_AT}" not in rendered
     assert not graphs(page)
     for title in (
         "Relative Oceanic Niño Index (RONI)",
@@ -124,9 +149,11 @@ def test_page_without_snapshots(monkeypatch):
     ):
         assert title in rendered
     assert layout.OPENING in rendered
-    assert headings(page) == ["About", "The event", "Realised impact"]
+    assert headings(page) == ["About", "The event", "Realised impact", SCHEMATIC]
     assert reading_line(page) is None
     assert "Latest three-month season" not in rendered
+    # The schematic is a static asset, so it shows whether or not snapshots exist.
+    assert_schematic_panel(page, teleconnections.IMAGE_URL_PATH)
 
 
 def test_commodity_panel_waits_for_the_index_snapshot(monkeypatch):
