@@ -173,7 +173,8 @@ def test_explainer_contract():
     assert explainer.how.index("Climate Prediction Center (CPC)") < explainer.how.index("CPC ")
     assert explainer.how.count("](") == 1
     assert f"({enso_index.RONI_URL})" in explainer.how
-    assert "neither a weekly value nor an impact" in explainer.not_shown
+    assert explainer.not_shown.startswith("A seasonal index measures the state of the ocean.")
+    assert "lie outside this panel" in explainer.not_shown
     assert explainer.source_name == "NOAA Climate Prediction Center"
     assert explainer.source_url == enso_index.SOURCE_URL
     assert explainer.licence_label == "US public domain"

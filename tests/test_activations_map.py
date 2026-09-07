@@ -207,7 +207,9 @@ def test_explainer_contract():
     assert ex.source_url.startswith("https://cerf.un.org")
     assert f"]({layer.CERF_ANTICIPATORY_ACTION_URL})" in ex.how
     assert ex.how.count("](http") == 1, "the how block carries exactly one link"
-    assert "says nothing about whether the hazard occurred" in ex.not_shown
+    assert ex.what.endswith("both are shown as they stand.")
+    assert ex.not_shown.startswith("An activation records money released on a forecast trigger.")
+    assert "lie outside this panel" in ex.not_shown
     for text in (ex.title, ex.what, ex.how, ex.why, ex.not_shown, ex.source_name):
         assert "—" not in text, "no em-dashes in public copy"
         assert ";" not in text, "no semicolons in public copy"

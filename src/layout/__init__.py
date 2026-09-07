@@ -23,13 +23,14 @@ OPENING = (
     "what was forecast, what was done in anticipation, and what has happened."
 )
 
+# The first two sentences of the README section "Why an event-resolved atlas",
+# verbatim; tests/test_layout.py checks them against README.md.
 ABOUT: tuple[str, ...] = (
-    "The atlas follows one climate event, the 2026-27 El Niño, forward through three "
-    "stages: forecast, anticipatory action and realised impact.",
-    "Each panel belongs to one stage, draws on a source whose licence is recorded in the "
-    "registry that ships with the code, and states what it does not show.",
-    "Where the stages diverge, for example an activation whose trigger fired for a "
-    "hazard that did not verify, the divergence is reported as a finding.",
+    "Hazard catalogues, forecast dashboards and response dashboards each cover one stage "
+    "of an event and keep their records apart.",
+    "The atlas takes the 2026-27 El Niño as its unit and organises the three records "
+    "around it, so that every entry is tied to this event with a stated basis and the "
+    "stages sit on one page in the order in which they happen.",
 )
 
 UNAVAILABLE_NOTICE = "Data snapshot not yet available"
@@ -64,7 +65,7 @@ def opening(reading: str | None = None) -> html.Header:
 
 
 def about() -> html.Section:
-    """Three sentences on the event-resolved logic of the atlas."""
+    """Two sentences on the event-resolved logic of the atlas, shared with the README."""
     return section("About", html.P(" ".join(ABOUT), className="mb-0"), id="about")
 
 

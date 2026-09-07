@@ -72,17 +72,17 @@ WHY = (
     "and temperature, so their world prices are among the first public series in which "
     "a realised effect on food and export earnings could appear. The panel puts the "
     "price series beside the El Niño seasons of the El Niño Southern Oscillation "
-    "(ENSO) index so that the reader can see whether the two align during this event, "
-    "and equally whether they do not."
+    "(ENSO) index so that the reader can see whether the two align during this event "
+    "or diverge."
 )
 
 NOT_SHOWN = (
-    "Co-movement here is descriptive. Prices respond to many drivers, among them "
-    "stocks, exchange rates, energy and fertiliser costs, trade policy and demand, so a "
-    "price move during an El Niño season is neither evidence of cause nor a measure of "
-    "its size. The series are nominal, so long-run movements include inflation, and "
-    "world prices do not show what producers or consumers in any one country received "
-    "or paid."
+    "Co-movement here is descriptive, since prices respond to many drivers, among them "
+    "stocks, exchange rates, energy and fertiliser costs, trade policy and demand, and a "
+    "price move during an El Niño season therefore stands as an observation without "
+    "attribution or size estimate. The series are nominal, so long-run movements "
+    "include inflation, and they are world prices, distinct from what producers "
+    "received or consumers paid in any one country."
 )
 
 

@@ -113,11 +113,10 @@ WHY = (
 )
 
 NOT_SHOWN = (
-    "A seasonal index is neither a weekly value nor an impact. It does not show "
-    "rainfall, temperature or losses in any place, and it does not show the "
-    "forecasts issued ahead of the event. A single season at or beyond the "
-    "threshold is shaded only once the five-season rule is met, so the "
-    "classification of the latest seasons can change as new months arrive."
+    "A seasonal index measures the state of the ocean. Weekly values, local rainfall "
+    "and temperature, losses in any place, and the forecasts issued ahead of the event "
+    "lie outside this panel. The latest seasons are shaded only once the five-season "
+    "rule is met."
 )
 
 

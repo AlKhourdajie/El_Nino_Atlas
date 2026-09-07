@@ -246,7 +246,8 @@ def test_public_copy_rules():
     explainer = tc.explainer()
     assert "National Oceanic and Atmospheric Administration" in explainer.what
     assert "increased rainfall across the east-central and eastern Pacific" in explainer.how
-    assert "computed composites" in explainer.not_shown
+    assert "composites computed from public-domain gridded data" in explainer.not_shown
+    assert explainer.not_shown.startswith("The schematic summarises tendencies across past events")
     assert "December to February" in explainer.what
 
 

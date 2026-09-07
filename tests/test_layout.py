@@ -12,6 +12,7 @@ from src.layout.explainer import Explainer
 from tests.support import component_ids, walk
 
 DESIGN = Path(__file__).resolve().parent.parent / "docs" / "DESIGN.md"
+README = Path(__file__).resolve().parent.parent / "README.md"
 EXPLAINER = Explainer(
     title="Example panel",
     what="What.",
@@ -80,16 +81,18 @@ def test_opening_carries_the_reading_line_directly_beneath_the_lead():
     assert "latest-reading" not in component_ids(layout.opening(None))
 
 
-def test_about_block_has_three_sentences():
-    assert len(layout.ABOUT) == 3
+def readme_paragraph(heading: str) -> str:
+    """The first paragraph under ``heading`` in README.md."""
+    text = README.read_text(encoding="utf-8")
+    section = text.split(f"\n{heading}\n", 1)[1]
+    return next(p.strip() for p in section.split("\n\n") if p.strip())
+
+
+def test_about_block_opens_the_readme_case_for_the_atlas():
+    assert len(layout.ABOUT) == 2
     assert all(sentence.endswith(".") and sentence.count(". ") == 0 for sentence in layout.ABOUT)
     text = " ".join(layout.ABOUT)
-    for phrase in (
-        "one climate event",
-        "forecast, anticipatory action and realised impact",
-        "finding",
-    ):
-        assert phrase in text
+    assert readme_paragraph("## Why an event-resolved atlas").startswith(text + " ")
     assert layout.about().id == "about"
 
 

@@ -158,8 +158,11 @@ def test_explainer_contract():
     assert "Pink Sheet" in explainer.how
     assert explainer.how.count("](") == 1
     assert f"({commodities.SOURCE_URL})" in explainer.how
+    assert explainer.why.endswith("whether the two align during this event or diverge.")
     assert "descriptive" in explainer.not_shown
     assert "many drivers" in explainer.not_shown
+    assert "an observation without attribution or size estimate" in explainer.not_shown
+    assert "distinct from what producers received or consumers paid" in explainer.not_shown
     assert explainer.source_url == commodities.SOURCE_URL
     assert explainer.licence_label == "CC BY 4.0"
     assert explainer.captions == (commodities.REBASE_CAPTION, PRICE_TRANSMISSION)

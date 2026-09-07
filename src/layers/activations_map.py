@@ -371,9 +371,8 @@ def explainer() -> Explainer:
             "linked to the 2026-27 El Niño. Each country shows one of three states: "
             "activated, framework with no activation, or not tracked, which means the "
             "register holds no entry for it. A country with any activation shows as "
-            "activated. The table below the map lists every entry with its source "
-            "document, an archived copy and a note where companion documents give "
-            "different figures."
+            "activated. Where companion documents give different figures, both are shown "
+            "as they stand."
         ),
         how=(
             f"In the words of [its own page]({CERF_ANTICIPATORY_ACTION_URL}), the Central "
@@ -394,13 +393,12 @@ def explainer() -> Explainer:
             "that did not arrive appears in the same way as one that did."
         ),
         not_shown=(
-            "An activation records money released on a forecast trigger and says nothing "
-            "about whether the hazard occurred. The map does not show whether the "
-            "forecast verified, how the money was spent or what happened to the people "
-            "targeted. A country shown as not tracked has no entry in the register. A "
-            "framework or a hazard may still exist there. Amounts are as the source "
-            "document states them, and where companion documents differ the table lists "
-            "both figures."
+            "An activation records money released on a forecast trigger. Whether the "
+            "hazard occurred, whether the forecast verified, how the money was spent and "
+            "what happened to the people targeted lie outside this panel. A country shown "
+            "as not tracked has no entry in the register, and a framework or a hazard may "
+            "still exist there. Amounts are as the source document states them, and where "
+            "companion documents differ the table lists both figures."
         ),
         source_name=(
             "UN Office for the Coordination of Humanitarian Affairs (OCHA), World Food "

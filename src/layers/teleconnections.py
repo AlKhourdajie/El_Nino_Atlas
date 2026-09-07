@@ -338,14 +338,12 @@ def explainer() -> Explainer:
             "places where none was."
         ),
         not_shown=(
-            "The shading shows tendencies across past events. Single events differ from the "
-            "tendency, and a region can see the opposite sign in a given season. This draft "
-            "carries no statistical test, no magnitude and no measure of confidence, and it "
-            "will be replaced by computed composites. Unshaded areas carry no drawn tendency, "
-            "and the schematic makes no claim about them. The page text lists Central America "
-            "as drier than normal in December to February, and the schematic draws no area for "
-            "it. The schematic draws a wetter area over the south-western United States, and "
-            "the page text has no line for it."
+            "The schematic summarises tendencies across past events, and single events differ "
+            "from it. CPC's page text lists Central America as drier in December to February "
+            "while the image draws no such area, and the image shows a wet area over the "
+            "south-western United States that the text omits. The panel is a draft and will "
+            "be replaced by composites computed from public-domain gridded data with "
+            "significance tests."
         ),
         source_name=SOURCE_NAME,
         source_url=SOURCE_URL,
