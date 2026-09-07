@@ -3,6 +3,7 @@
 import copy
 import hashlib
 import json
+import re
 
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
@@ -205,6 +206,20 @@ def test_explainer_contract_renders():
         assert label in rendered
     assert explainer.source_url in rendered
     assert explainer.captions and "draft" in explainer.captions[0].lower()
+
+
+def test_explainer_title_matches_the_section_and_how_block_carries_the_link():
+    explainer = tc.explainer()
+    assert explainer.title == tc.PANEL_TITLE
+    link_re = re.compile(r"\[([^\]]+)\]\((https?://[^\s)]+)\)")
+    assert link_re.findall(explainer.how) == [(tc.SOURCE_LINK_LABEL, tc.SOURCE_URL)]
+    for field in ("what", "why", "not_shown"):
+        assert not link_re.search(getattr(explainer, field))
+    anchors = [c for c in walk(render_explainer(explainer)) if isinstance(c, html.A)]
+    assert [(a.children, a.href) for a in anchors] == [
+        (tc.SOURCE_LINK_LABEL, tc.SOURCE_URL),
+        (tc.SOURCE_NAME, tc.SOURCE_URL),
+    ]
 
 
 def public_copy() -> list[str]:

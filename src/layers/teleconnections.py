@@ -68,6 +68,10 @@ SOURCE_NAME = "NOAA Climate Prediction Center"
 SOURCE_URL = "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml"
 IMAGE_URL = "https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/impacts/warm.gif"
 LICENCE_LABEL = "US Government work, public domain"
+# The one link the how-block carries, rendered by ``render_explainer``.
+SOURCE_LINK_LABEL = (
+    "Climate Prediction Center page on El Niño temperature and precipitation patterns"
+)
 
 # The schematic as served on the page: Dash serves ``assets/`` at ``/assets/``.
 IMAGE_ASSET = "teleconnections/noaa_cpc_elnino_impacts.jpg"
@@ -309,7 +313,7 @@ def build_figure(geojson: dict) -> go.Figure:
 
 def explainer() -> Explainer:
     return Explainer(
-        title="El Niño teleconnections, December to February (draft)",
+        title=PANEL_TITLE,
         what=(
             "Where El Niño has tended to shift rainfall and temperature in past seasons, on the "
             "schematic published by the National Oceanic and Atmospheric Administration (NOAA) "
@@ -323,8 +327,8 @@ def explainer() -> Explainer:
             "episodes are 'associated with increased rainfall across the east-central and "
             "eastern Pacific and with drier than normal conditions over northern Australia, "
             "Indonesia and the Philippines', and lists further regional tendencies for "
-            "December to February. The image is shown as retrieved from that page, without "
-            "cropping or redrawing. The source line below links to the page."
+            "December to February. The image is shown as retrieved, without cropping or "
+            f"redrawing, from the [{SOURCE_LINK_LABEL}]({SOURCE_URL})."
         ),
         why=(
             "The impacts the other layers track begin with shifts in seasonal rainfall and "
