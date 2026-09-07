@@ -115,7 +115,7 @@ def test_about_block_opens_the_readme_case_for_the_atlas():
         "of an event and keep their records apart.",
         "The atlas takes the 2026-27 El Niño as its unit and organises the three records "
         "around it, so that every entry is tied to this event with a stated basis and the "
-        "stages sit on one page, each tied to this event.",
+        "stages sit on one page.",
     )
     assert all(sentence.endswith(".") and sentence.count(". ") == 0 for sentence in layout.ABOUT)
     text = " ".join(layout.ABOUT)
