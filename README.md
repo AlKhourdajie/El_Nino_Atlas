@@ -1,127 +1,150 @@
 # El Niño Atlas
 
-An open-source interactive tracker linking the **2026-27 El Niño** to
-realised socioeconomic impacts. Each signal is followed through three
-stages: **forecast**, **anticipatory action**, **realised impact**.
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22644790.svg)](https://doi.org/10.5281/zenodo.22644790)
 
-**Status: pre-data scaffold.** The app serves a placeholder page with the
-three-state legend. No data are fetched yet; no layers are active.
+Live site: https://el-nino-atlas.onrender.com
 
-## What the atlas shows
+An El Niño is under way in the tropical Pacific and is forecast to become very strong by late 2026, on top of the warmest global background on record. The El Niño Atlas follows this one event forward in time: what was forecast, what was done in anticipation, and what has happened. The basis for every link is stated, and every gap in the record is shown as a gap.
 
-The atlas follows a single event, the 2026-27 El Niño, from the first
-forecast signal to what can be measured afterwards. Every layer sits in
-one of three stages and is drawn from a source listed in
-`src/sources.yaml`. Nothing is shown from a source whose licence has not
-been cleared, and nothing is shown from EM-DAT.
+The atlas is a research tool in development. Version 0.2.0 (September 2026) carries three panels and one draft map. The code is released under the MIT licence. Each data source is used under its own terms, listed below.
 
-### Stages and metrics
+## Why an event-resolved atlas
 
-| Stage | Metric | Source | Status |
-|---|---|---|---|
-| Forecast | Oceanic Niño Index (ONI): three-month running mean of Niño 3.4 sea-surface temperature anomaly, degrees C, monthly | NOAA CPC | approved, parser pending |
-| Forecast | ENSO event spans derived from the ONI under the NOAA convention: phase, onset, end, peak | derived | implemented |
-| Forecast | Global disaster alerts (GDACS) | EC JRC and OCHA | pending licence check |
-| Anticipatory action | Activations: date, country, framework, agencies, amount released (USD), people covered, trigger that fired | CERF, IFRC GO, hand-curated register | curated register in place, no entries yet |
-| Anticipatory action | Food-security outlooks and alerts | FEWS NET | conditional |
-| Realised impact | Monthly commodity prices for coffee (arabica and robusta), cocoa, sugar and rice | World Bank Pink Sheet | approved, parser pending |
-| Realised impact | Food production and producer prices | FAOSTAT | approved |
-| Realised impact | Humanitarian reporting, metadata and links only | OCHA ReliefWeb | conditional |
-| Realised impact | Internal displacement | IDMC | pending licence check |
-| Realised impact | National disaster loss records | UNDRR DesInventar | pending licence check |
-| Realised impact | Panama Canal draught restrictions and transits | Panama Canal Authority | pending licence check |
-| Context | Attribution studies and maps | World Weather Attribution, Carbon Brief | link-only, never fetched |
+Disaster catalogues record hazards by type, place and date. Forecast dashboards show what is expected. Response dashboards show where money went. None of them is organised around the climate event that connects the three. The atlas takes the 2026-27 El Niño as its unit. Every entry is tied to this event with a stated basis, and the three stages sit on one page in the order in which they happen. Divergence between the stages is a finding. A forecast that failed to verify, an activation whose hazard never arrived, a price that moved for another reason: each of these is content, presented with the same care as a confirmed impact.
 
-Figures are authored in degrees C. The ONI thresholds follow NOAA: an
-event is five or more consecutive overlapping three-month seasons at or
-beyond plus or minus 0.5 degrees C.
+## How to read the atlas
 
-### How to read it
+**The spine.** The page runs in the order of the event: the state of El Niño in the Pacific, the anticipatory action taken on forecasts, and the realised impacts that public data can measure. Panels are added in that sequence as the event unfolds.
 
-Every layer classifies each unit (a country, a basin, a commodity, an
-activation) into exactly one of three states:
+**Three states, never two.** Where a panel shows regions, each region is in one of three states: something recorded; assessed with nothing recorded; or not assessed. The third state has its own grey. A region that a source failed to cover is shown as not assessed. Showing it as "nothing recorded" would publish a claim that no source made.
 
-- **Alert**: an active alert, activation or realised impact.
-- **No alert**: assessed, and nothing to report.
-- **Not assessed**: no assessment exists for that unit or period. This is
-  shown with its own hatched swatch and never in the "No alert" colour,
-  because absence of evidence is not evidence of absence.
+**Provisional.** The rule that identifies an El Niño needs five consecutive three-month seasons at or beyond the threshold. Until the fifth season is in, the 2026-27 event is marked provisional, and the classification of the latest seasons can change as new months arrive.
 
-The tracker reports the event as observed, including weak, null and
-negative outcomes. Divergence between the stages is content in its own
-right: an activation whose trigger fired but whose hazard did not
-verify is displayed as such. No layer selects or phrases content to make
-the event look stronger or weaker.
+**What the atlas claims.** Association between El Niño and an outcome is asserted only through a mechanism that a cited source states, never through timing alone. Every panel names what it does not show. Three fixed sentences accompany any panel that touches economic growth, prices or the global temperature record. They are listed under Caption guardrails.
 
-Captions on growth effects, price transmission and the 2023-24
-temperature contribution follow the guardrails in `docs/DESIGN.md`:
-growth effects are directionally supported but dollar magnitudes are
-contested; ENSO-to-price transmission is disputed and price
-co-movements are suggestive only; El Niño contributed on the order of
-0.1 degrees C to the 2023-24 records while the forced warming trend
-dominates.
+## The panels
 
-## Quickstart
+### The event: RONI and ONI
 
-Requires [uv](https://docs.astral.sh/uv/) and Python 3.11.
+**What this shows.** Two indices of the El Niño Southern Oscillation (ENSO) published by the National Oceanic and Atmospheric Administration (NOAA) Climate Prediction Center (CPC): the Relative Oceanic Niño Index (RONI) as the primary line and the Oceanic Niño Index (ONI) as a secondary line, from 1950 to the latest complete season. Each point is a three-month season in degrees Celsius, plotted at its centre month. Shading marks the seasons of each event that the five-season rule yields on RONI: warm shading for El Niño, light cool shading for La Niña. A dashed outline and the word provisional mark an event whose classification can still change.
 
-```bash
+**How it is measured.** ONI is the three-month running mean of the sea surface temperature anomaly in the Niño 3.4 region of the central Pacific (5°N to 5°S, 120°W to 170°W), relative to a 30-year base period. RONI, CPC's official index since 1 February 2026, starts from the same anomaly, subtracts the average anomaly of the global tropics (20°N to 20°S) and rescales the result to match the amplitude of ONI. CPC identifies El Niño or La Niña when the index is at or beyond +0.5 °C or −0.5 °C for five consecutive overlapping three-month seasons. The definition is set out in the [CPC RONI announcement](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/announcement.php). The values come from the [CPC ONI table](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/oni/v6/) and the [CPC RONI table](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/), both computed on ERSST version 6.
+
+**Why it matters for El Niño.** ENSO is the largest source of year-to-year variation in the global climate, and every forecast, activation and impact in the atlas is tied to the state of the event that this index measures. Because the tropical oceans have warmed, the Niño 3.4 anomaly on its own partly reflects the background trend. RONI subtracts the tropical mean so that the index follows the contrast that drives the atmospheric response. The two lines diverge most when the whole tropics are warm.
+
+**What it does not show.** A seasonal index is neither a weekly value nor an impact. It shows no rainfall, temperature or loss in any place, and it shows none of the forecasts issued ahead of the event. The latest seasons are shaded only once the five-season rule is met.
+
+### Anticipatory action: activations
+
+**What this shows.** A world map with each country in one of three states: an anticipatory-action framework activated for this El Niño; a framework in place with no activation recorded; or not tracked by the atlas. Each entry lists the framework, the trigger, the date, the funding released and the number of people targeted, with a link to the primary document and to an archived copy of it. Where companion documents give different figures, both are shown and neither is reconciled.
+
+**How it is measured.** Anticipatory action is humanitarian funding released before a forecast hazard arrives, on triggers agreed in advance. The entries are taken from the primary documents of the United Nations Central Emergency Response Fund ([CERF](https://cerf.un.org)), the World Food Programme ([WFP](https://www.wfp.org)) and the Food and Agriculture Organization ([FAO](https://www.fao.org)). Every entry is typed from the document by hand and checked by the maintainer before it enters the atlas.
+
+**Why it matters for El Niño.** Activation is the first observable response to a forecast. Its timing and scale, set against what later happened, form the core of the forecast-to-impact record.
+
+**What it does not show.** An activation records money released on a forecast trigger. It says nothing about whether the hazard occurred or whether the action worked. Most countries are shown as not tracked. That is the current coverage of the atlas, and it narrows as entries are added.
+
+### Realised impact: commodity prices
+
+**What this shows.** Monthly world prices for five agricultural commodities: arabica coffee, robusta coffee, cocoa, sugar and rice. Each series is rebased so that January 2010 equals 100, which puts five different units on one axis. Hovering over a point shows the nominal price in its own unit. Shading marks El Niño seasons as in the index panel, so that price movements can be read against the state of the event.
+
+**How it is measured.** The World Bank's Commodity Price Data, known as the Pink Sheet, is a monthly release of nominal US dollar prices for energy, agricultural, fertiliser and metal commodities, most series from 1960, alongside price indices for each group. Each price is the monthly average for a stated grade in a stated market. The release and its documentation are on the [World Bank commodity markets page](https://www.worldbank.org/en/research/commodity-markets).
+
+**Why it matters for El Niño.** Coffee, cocoa, sugar and rice are grown in regions where El Niño shifts rainfall and temperature, so their world prices are among the first public series in which a realised effect on food and export earnings could appear. The panel places the price series beside the El Niño seasons so that the reader can see whether the two align during this event, and equally whether they do not.
+
+**What it does not show.** Co-movement here is descriptive. Prices respond to many drivers, among them stocks, exchange rates, energy and fertiliser costs, trade policy and demand, so a price move during an El Niño season is neither evidence of cause nor a measure of its size. The series are nominal, so long-run movements include inflation, and world prices show neither what producers received nor what consumers paid in any one country.
+
+### Draft: where El Niño usually matters
+
+**What this shows.** NOAA CPC's schematic of the regions where El Niño has tended to shift rainfall and temperature in past seasons, reproduced as published, with two panels: December to February above and June to August below. Each shaded area marks a tendency towards wetter, drier, warmer or cooler conditions than normal, or a combination of two.
+
+**How it is measured.** The schematic summarises past events. It is drawn by CPC and carries no statistical test. Source: [CPC El Niño impacts](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml), a US government work.
+
+**Why it matters for El Niño.** It shows where an El Niño signal is expected, which is the basis on which later realised-impact layers will be admitted to the atlas.
+
+**What it does not show.** Tendencies across past events. Single events differ. CPC's page text lists Central America as drier in December to February while the image draws no such area, and the image shows a wet area over the south-western United States that the text omits. The panel is a draft and will be replaced by composites computed from public-domain gridded data with significance tests.
+
+## Method notes
+
+**ENSO classification.** The classifier applies CPC's rule to both indices: five or more consecutive overlapping three-month seasons at or beyond ±0.5 °C. The threshold is applied to the one-decimal values that CPC publishes, which is how CPC's own episode tables are built. The classifier is tested against those tables, with the 1997-98 and 2015-16 El Niño and the 2010-11 La Niña pinned on both indices. Strength bands follow the thresholds in Jan Null's widely used tables: weak 0.5 to 0.9, moderate 1.0 to 1.4, strong 1.5 to 1.9, very strong 2.0 and above. A run that reaches the latest available season has no end date, and a run shorter than five seasons is provisional.
+
+**Snapshots.** A scheduled job runs every fetcher each night, validates the result against a fixed schema (source, series, region, date, value, unit, retrieval time, licence) and commits a snapshot only when the source has changed. The site serves the snapshot, and each panel states its retrieval date. Snapshots are committed only for sources whose licence permits redistribution.
+
+**Curated entries.** Anticipatory-action entries live in `data/curated/` and are entered by hand from primary documents, with the source URL and an archived copy of the page. A discrepancies field records figures that differ between companion documents.
+
+**Falsifiability.** The atlas reports the event as observed, including weak, null and negative outcomes. Presentation choices that affect apparent severity are documented and applied symmetrically.
+
+## Caption guardrails
+
+These three sentences appear, verbatim, on any panel that touches the subject named.
+
+1. El Niño's depressing effect on growth in exposed economies is directionally supported across independent studies; headline dollar magnitudes are contested on econometric grounds.
+2. ENSO-to-price transmission is disputed and may have weakened in recent decades; treat price co-movements as suggestive.
+3. El Niño contributed on the order of 0.1 degrees C to the 2023-24 global temperature records; the forced warming trend dominates.
+
+## Data sources and licences
+
+`src/sources.yaml` is a machine-readable registry of every source considered. Each entry carries a status, a one-line reason, the terms page, the licence identifier and the deep links. Tests enforce the registry: no fetcher exists for a source without approved or conditional status, and no code refers to an excluded source. Current statuses:
+
+| Status | Sources |
+|---|---|
+| Approved | NOAA CPC ONI and RONI (US public domain); World Bank Pink Sheet (CC BY 4.0); FAOSTAT (CC BY 4.0, no layer yet); NOAA CPC El Niño impacts schematic (US public domain) |
+| Conditional | FEWS NET (open API, custom attribution, reporting gaps in 2026); ReliefWeb (metadata and links only); OCHA and CERF activation reports (verified per document) |
+| Link only | World Weather Attribution; Carbon Brief attribution map |
+| Superseded | IMF Primary Commodity Prices (duplicates the Pink Sheet under worse terms) |
+| Excluded | EM-DAT (terms prohibit redistribution and derivative databases); Munich Re and Swiss Re catastrophe data (proprietary) |
+| Pending | IDMC; UNDRR DesInventar; GDACS; IFRC GO; Panama Canal Authority |
+
+Excluded sources may inform the accompanying paper. Nothing derived from them enters the atlas.
+
+## Repository layout
+
+```
+app.py                   Dash application; exposes `server` for gunicorn
+run.py                   Command line: `dashboard` serves the site, `update` refreshes snapshots
+config.py                Host, port and debug from environment variables
+src/sources.yaml         Source registry (statuses, reasons, terms, licences, links)
+src/schema.py            Tidy long-format contract and validation, including the registry gate
+src/data_access.py       Snapshot reading and writing
+src/enso_events.py       ENSO classification on CPC's rule
+src/activations.py       Validation and loading of curated activation entries
+src/fetchers/            One module per approved source: fetch and parse
+src/layers/              One module per panel: figure and explainer text
+src/layout/              Page builders, three-state legend, explainer rendering
+src/theme.py             Colour tokens and Plotly templates
+assets/                  Stylesheet and the schematic image with its provenance record
+data/curated/            Hand-curated entries
+data/snapshots/          Latest snapshot per source, written by the nightly job
+tests/                   Test suite; `fixtures/` holds copies of source files with provenance notes
+docs/DESIGN.md           Design record: scope, layers, rules, guardrails, deferred items
+CITATION.cff             Citation metadata and the concept DOI
+CLAUDE.md                Standing rules for coding agents working in this repository
+LICENSE                  MIT licence for the code
+pyproject.toml           Project metadata and dependencies; `uv.lock` pins them
+render.yaml              Hosting configuration
+.github/workflows/       Continuous integration and the nightly update
+.pre-commit-config.yaml  Lint and the gate tests before each commit
+```
+
+## Run it locally
+
+```
 uv sync
-uv run python run.py dashboard    # serve on http://127.0.0.1:8050
-uv run python run.py update       # run registered fetchers (none yet)
-uv run ruff check .
+uv run python run.py update
+uv run python run.py dashboard
 uv run pytest
-uv run pre-commit install         # ruff plus the gate tests on every commit
 ```
 
-Host, port and debug mode are read from `ATLAS_HOST`, `ATLAS_PORT` (or
-`PORT`) and `ATLAS_DEBUG`; see `config.py`.
+`pip install .` also works from a clean checkout. The site reads the snapshots that `update` writes.
 
-## Layout
+## Cite
 
-- `app.py`: builds the Dash app at import and exposes `server` for gunicorn.
-- `run.py`: command-line entry point.
-- `src/theme.py`: colour tokens and Plotly templates.
-- `src/layout.py`: page builders.
-- `src/layers/`, `src/fetchers/`: stub packages.
-- `src/sources.yaml`: the licence registry that gates all data work.
-- `src/schema.py`: the tidy long-format contract every layer emits.
-- `src/enso_events.py`: NOAA-convention ENSO event classification.
-- `data/curated/activations.yaml`: hand-curated anticipatory-action register.
-- `data/curated/`: human-curated files, tracked in git; `data/raw/` and
-  `data/processed/` are fetched at run time and ignored.
-- `render.yaml`: Render web-service definition.
-- `docs/DESIGN.md`: scope, layer table, legend rule, caption guardrails.
-- `CLAUDE.md`: standing rules for every contributor and session.
+Cite the software with the concept DOI, which resolves to the latest version: https://doi.org/10.5281/zenodo.22644790. `CITATION.cff` carries the full reference. Cite each data source under its own terms; the source line on each panel gives the attribution.
 
-## Deployment
+## Corrections
 
-Production serves the Flask object exposed by `app.py`:
-
-```bash
-uv run gunicorn app:server --bind 0.0.0.0:8050
-```
-
-`render.yaml` defines a Render web service on Python 3.11 that builds
-with uv (falling back to pip if uv is unavailable) and starts
-`gunicorn app:server`. Committing the file does not create the service;
-connect the repository in the Render dashboard when the tool is ready to
-go live.
+Open an issue with the source URL. A correction to a curated entry needs the primary document that supports it. A source's status changes only with its terms page cited in the registry.
 
 ## Licence
 
-Code is released under the MIT licence (see `LICENSE`).
-
-Data are **not** covered by the code licence. Each source is governed by
-its entry in `src/sources.yaml`, which records the licence,
-redistribution terms and required attribution, and which gates every
-fetcher. Only sources marked `redistribution: "yes"` may ever be
-committed to this repository.
-
-This tool contains no EM-DAT content and never will; EM-DAT's terms
-prohibit redistribution and derivative databases, so any such analysis
-lives in the accompanying paper only.
-
-## Citation
-
-See `CITATION.cff`.
+Code: MIT. Data: per source, as listed in `src/sources.yaml` and shown on each panel.
