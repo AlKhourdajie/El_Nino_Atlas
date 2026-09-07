@@ -52,6 +52,16 @@ suggestions.
   contribution follow the guardrails in `docs/DESIGN.md` verbatim or in
   substance.
 
+## Panels and public copy
+
+- Every panel module exposes `build_figure(...)` and
+  `explainer() -> Explainer` (`src/layout/explainer.py`); the app renders
+  the explainer beside the figure with `render_explainer`.
+- Public copy rules: British English; no em-dashes; plain verbs; no
+  intensifiers; no metaphor; no contrastive negation ("not X but Y" and
+  its variants); acronyms expanded on first use.
+- The "how" block uses the source's own wording with one link.
+
 ## Style
 
 - British English in all documentation and user-facing text.
