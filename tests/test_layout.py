@@ -24,10 +24,10 @@ EXPLAINER = Explainer(
 )
 
 
-def design_captions() -> list[str]:
-    """The blockquotes of the caption guardrails section, each joined into one line."""
+def design_blockquotes(heading: str) -> list[str]:
+    """The blockquotes of one section of docs/DESIGN.md, each joined into one line."""
     text = DESIGN.read_text(encoding="utf-8")
-    section = text.split("## Caption guardrails", 1)[1].split("\n## ", 1)[0]
+    section = text.split(f"\n{heading}\n", 1)[1].split("\n## ", 1)[0]
     quotes: list[str] = []
     current: list[str] = []
     for line in section.splitlines():
@@ -39,6 +39,10 @@ def design_captions() -> list[str]:
     if current:
         quotes.append(" ".join(current))
     return quotes
+
+
+def design_captions() -> list[str]:
+    return design_blockquotes("## Caption guardrails")
 
 
 def test_captions_are_verbatim_from_the_design_notes():
@@ -61,6 +65,7 @@ def test_opening_line_is_verbatim():
         "by late 2026, on top of the warmest global background on record. This atlas follows "
         "what was forecast, what was done in anticipation, and what has happened."
     )
+    assert design_blockquotes("## Opening line") == [layout.OPENING]
     header = layout.opening()
     (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
     assert lead.children == layout.OPENING
