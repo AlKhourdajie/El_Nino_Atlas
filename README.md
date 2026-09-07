@@ -4,45 +4,45 @@
 
 Live site: https://el-nino-atlas.onrender.com
 
-An El Niño is under way in the tropical Pacific and is forecast to become very strong by late 2026, on top of the warmest global background on record. The El Niño Atlas follows this one event forward in time: what was forecast, what was done in anticipation, and what has happened. The basis for every link is stated, and every gap in the record is shown as a gap.
+An El Niño is under way in the tropical Pacific and is forecast to become very strong by late 2026, on top of the warmest global background on record. The El Niño Atlas follows this one event forward in time, from what was forecast through what was done in anticipation to what has happened. The basis for every link is stated, and regions and periods without a record are marked as such.
 
-The atlas is a research tool in development. Version 0.2.0 (September 2026) carries three panels and one draft map. The code is released under the MIT licence. Each data source is used under its own terms, listed below.
+The atlas is a research tool in development. Version 0.2.0 (September 2026) carries three panels and one draft map. The code is released under the MIT licence, and each data source is used under its own terms, listed below.
 
 ## Why an event-resolved atlas
 
-Disaster catalogues record hazards by type, place and date. Forecast dashboards show what is expected. Response dashboards show where money went. None of them is organised around the climate event that connects the three. The atlas takes the 2026-27 El Niño as its unit. Every entry is tied to this event with a stated basis, and the three stages sit on one page in the order in which they happen. Divergence between the stages is a finding. A forecast that failed to verify, an activation whose hazard never arrived, a price that moved for another reason: each of these is content, presented with the same care as a confirmed impact.
+Hazard catalogues, forecast dashboards and response dashboards each cover one stage of an event and keep their records apart. The atlas takes the 2026-27 El Niño as its unit and organises the three records around it, so that every entry is tied to this event with a stated basis and the stages sit on one page in the order in which they happen. Divergence between the stages is a finding in its own right, so a forecast that failed to verify, an activation whose hazard never arrived and a price that moved for another reason are recorded with the same care as a confirmed impact.
 
 ## How to read the atlas
 
-**The spine.** The page runs in the order of the event: the state of El Niño in the Pacific, the anticipatory action taken on forecasts, and the realised impacts that public data can measure. Panels are added in that sequence as the event unfolds.
+**Order.** The page runs in the order of the event: the state of El Niño in the Pacific, the anticipatory action taken on forecasts, and the realised impacts that public data can measure. Panels are added in that sequence as the event unfolds.
 
-**Three states, never two.** Where a panel shows regions, each region is in one of three states: something recorded; assessed with nothing recorded; or not assessed. The third state has its own grey. A region that a source failed to cover is shown as not assessed. Showing it as "nothing recorded" would publish a claim that no source made.
+**Three states.** Where a panel shows regions, each region is in one of three states: something recorded; assessed with nothing recorded; or not assessed. The third state has its own grey, and a region that a source did not cover is shown in it, because a "nothing recorded" label would attribute to the source an assessment it never made.
 
 **Provisional.** The rule that identifies an El Niño needs five consecutive three-month seasons at or beyond the threshold. Until the fifth season is in, the 2026-27 event is marked provisional, and the classification of the latest seasons can change as new months arrive.
 
-**What the atlas claims.** Association between El Niño and an outcome is asserted only through a mechanism that a cited source states, never through timing alone. Every panel names what it does not show. Three fixed sentences accompany any panel that touches economic growth, prices or the global temperature record. They are listed under Caption guardrails.
+**Basis of every claim.** Every association between El Niño and an outcome rests on a mechanism stated by a cited source. Where two things merely coincide in time, the atlas records the coincidence as such. Every panel names what it does not show, and three fixed sentences accompany any panel that touches economic growth, prices or the global temperature record. They are listed under Caption guardrails.
 
 ## The panels
 
 ### The event: RONI and ONI
 
-**What this shows.** Two indices of the El Niño Southern Oscillation (ENSO) published by the National Oceanic and Atmospheric Administration (NOAA) Climate Prediction Center (CPC): the Relative Oceanic Niño Index (RONI) as the primary line and the Oceanic Niño Index (ONI) as a secondary line, from 1950 to the latest complete season. Each point is a three-month season in degrees Celsius, plotted at its centre month. Shading marks the seasons of each event that the five-season rule yields on RONI: warm shading for El Niño, light cool shading for La Niña. A dashed outline and the word provisional mark an event whose classification can still change.
+**What this shows.** Two indices of the El Niño Southern Oscillation (ENSO) published by the National Oceanic and Atmospheric Administration (NOAA) Climate Prediction Center (CPC): the Relative Oceanic Niño Index (RONI) as the primary line and the Oceanic Niño Index (ONI) as a secondary line, from 1950 to the latest complete season. Each point is a three-month season in degrees Celsius, plotted at its centre month. Shading marks the seasons of each event that the five-season rule yields on RONI, warm shading for El Niño and light cool shading for La Niña. A dashed outline and the word provisional mark an event whose classification can still change.
 
 **How it is measured.** ONI is the three-month running mean of the sea surface temperature anomaly in the Niño 3.4 region of the central Pacific (5°N to 5°S, 120°W to 170°W), relative to a 30-year base period. RONI, CPC's official index since 1 February 2026, starts from the same anomaly, subtracts the average anomaly of the global tropics (20°N to 20°S) and rescales the result to match the amplitude of ONI. CPC identifies El Niño or La Niña when the index is at or beyond +0.5 °C or −0.5 °C for five consecutive overlapping three-month seasons. The definition is set out in the [CPC RONI announcement](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/announcement.php). The values come from the [CPC ONI table](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/oni/v6/) and the [CPC RONI table](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/enso/roni/), both computed on ERSST version 6.
 
 **Why it matters for El Niño.** ENSO is the largest source of year-to-year variation in the global climate, and every forecast, activation and impact in the atlas is tied to the state of the event that this index measures. Because the tropical oceans have warmed, the Niño 3.4 anomaly on its own partly reflects the background trend. RONI subtracts the tropical mean so that the index follows the contrast that drives the atmospheric response. The two lines diverge most when the whole tropics are warm.
 
-**What it does not show.** A seasonal index is neither a weekly value nor an impact. It shows no rainfall, temperature or loss in any place, and it shows none of the forecasts issued ahead of the event. The latest seasons are shaded only once the five-season rule is met.
+**What it does not show.** A seasonal index measures the state of the ocean. Weekly values, local rainfall and temperature, losses in any place, and the forecasts issued ahead of the event lie outside this panel. The latest seasons are shaded only once the five-season rule is met.
 
 ### Anticipatory action: activations
 
-**What this shows.** A world map with each country in one of three states: an anticipatory-action framework activated for this El Niño; a framework in place with no activation recorded; or not tracked by the atlas. Each entry lists the framework, the trigger, the date, the funding released and the number of people targeted, with a link to the primary document and to an archived copy of it. Where companion documents give different figures, both are shown and neither is reconciled.
+**What this shows.** A world map with each country in one of three states: an anticipatory-action framework activated for this El Niño; a framework in place with no activation recorded; or not tracked by the atlas. Each entry lists the framework, the trigger, the date, the funding released and the number of people targeted, with a link to the primary document and to an archived copy of it. Where companion documents give different figures, both are shown as they stand.
 
 **How it is measured.** Anticipatory action is humanitarian funding released before a forecast hazard arrives, on triggers agreed in advance. The entries are taken from the primary documents of the United Nations Central Emergency Response Fund ([CERF](https://cerf.un.org)), the World Food Programme ([WFP](https://www.wfp.org)) and the Food and Agriculture Organization ([FAO](https://www.fao.org)). Every entry is typed from the document by hand and checked by the maintainer before it enters the atlas.
 
 **Why it matters for El Niño.** Activation is the first observable response to a forecast. Its timing and scale, set against what later happened, form the core of the forecast-to-impact record.
 
-**What it does not show.** An activation records money released on a forecast trigger. It says nothing about whether the hazard occurred or whether the action worked. Most countries are shown as not tracked. That is the current coverage of the atlas, and it narrows as entries are added.
+**What it does not show.** An activation records money released on a forecast trigger. Whether the hazard occurred and whether the action worked lie outside this panel. Most countries are shown as not tracked, which is the current coverage of the atlas, and the tracked area grows as entries are added.
 
 ### Realised impact: commodity prices
 
@@ -50,29 +50,29 @@ Disaster catalogues record hazards by type, place and date. Forecast dashboards 
 
 **How it is measured.** The World Bank's Commodity Price Data, known as the Pink Sheet, is a monthly release of nominal US dollar prices for energy, agricultural, fertiliser and metal commodities, most series from 1960, alongside price indices for each group. Each price is the monthly average for a stated grade in a stated market. The release and its documentation are on the [World Bank commodity markets page](https://www.worldbank.org/en/research/commodity-markets).
 
-**Why it matters for El Niño.** Coffee, cocoa, sugar and rice are grown in regions where El Niño shifts rainfall and temperature, so their world prices are among the first public series in which a realised effect on food and export earnings could appear. The panel places the price series beside the El Niño seasons so that the reader can see whether the two align during this event, and equally whether they do not.
+**Why it matters for El Niño.** Coffee, cocoa, sugar and rice are grown in regions where El Niño shifts rainfall and temperature, so their world prices are among the first public series in which a realised effect on food and export earnings could appear. The panel places the price series beside the El Niño seasons so that the reader can see whether the two align during this event or diverge.
 
-**What it does not show.** Co-movement here is descriptive. Prices respond to many drivers, among them stocks, exchange rates, energy and fertiliser costs, trade policy and demand, so a price move during an El Niño season is neither evidence of cause nor a measure of its size. The series are nominal, so long-run movements include inflation, and world prices show neither what producers received nor what consumers paid in any one country.
+**What it does not show.** Co-movement here is descriptive, since prices respond to many drivers, among them stocks, exchange rates, energy and fertiliser costs, trade policy and demand, and a price move during an El Niño season therefore stands as an observation without attribution or size estimate. The series are nominal, so long-run movements include inflation, and they are world prices, distinct from what producers received or consumers paid in any one country.
 
-### Draft: where El Niño usually matters
+### Where El Niño usually matters: draft schematic
 
-**What this shows.** NOAA CPC's schematic of the regions where El Niño has tended to shift rainfall and temperature in past seasons, reproduced as published, with two panels: December to February above and June to August below. Each shaded area marks a tendency towards wetter, drier, warmer or cooler conditions than normal, or a combination of two.
+**What this shows.** NOAA CPC's schematic of the regions where El Niño has tended to shift rainfall and temperature in past events, reproduced as published, with December to February in the upper panel and June to August in the lower panel.
 
-**How it is measured.** The schematic summarises past events. It is drawn by CPC and carries no statistical test. Source: [CPC El Niño impacts](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml), a US government work.
+**How it is measured.** CPC draws the schematic as a summary of past events, and it carries no statistical test. Source: [CPC El Niño impacts](https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensocycle/elninosfc.shtml), a US government work.
 
 **Why it matters for El Niño.** It shows where an El Niño signal is expected, which is the basis on which later realised-impact layers will be admitted to the atlas.
 
-**What it does not show.** Tendencies across past events. Single events differ. CPC's page text lists Central America as drier in December to February while the image draws no such area, and the image shows a wet area over the south-western United States that the text omits. The panel is a draft and will be replaced by composites computed from public-domain gridded data with significance tests.
+**What it does not show.** The schematic summarises tendencies across past events, and single events differ from it. CPC's page text lists Central America as drier in December to February while the image draws no such area, and the image shows a wet area over the south-western United States that the text omits. The panel is a draft and will be replaced by composites computed from public-domain gridded data with significance tests.
 
 ## Method notes
 
 **ENSO classification.** The classifier applies CPC's rule to both indices: five or more consecutive overlapping three-month seasons at or beyond ±0.5 °C. The threshold is applied to the one-decimal values that CPC publishes, which is how CPC's own episode tables are built. The classifier is tested against those tables, with the 1997-98 and 2015-16 El Niño and the 2010-11 La Niña pinned on both indices. Strength bands follow the thresholds in Jan Null's widely used tables: weak 0.5 to 0.9, moderate 1.0 to 1.4, strong 1.5 to 1.9, very strong 2.0 and above. A run that reaches the latest available season has no end date, and a run shorter than five seasons is provisional.
 
-**Snapshots.** A scheduled job runs every fetcher each night, validates the result against a fixed schema (source, series, region, date, value, unit, retrieval time, licence) and commits a snapshot only when the source has changed. The site serves the snapshot, and each panel states its retrieval date. Snapshots are committed only for sources whose licence permits redistribution.
+**Snapshots.** A scheduled job runs every fetcher each night, validates the result against a fixed schema (source, series, region, date, value, unit, retrieval time, licence) and commits a snapshot when the source has changed. The site serves the snapshot, and each panel states its retrieval date. Snapshots are committed for sources whose licence permits redistribution.
 
 **Curated entries.** Anticipatory-action entries live in `data/curated/` and are entered by hand from primary documents, with the source URL and an archived copy of the page. A discrepancies field records figures that differ between companion documents.
 
-**Falsifiability.** The atlas reports the event as observed, including weak, null and negative outcomes. Presentation choices that affect apparent severity are documented and applied symmetrically.
+**Falsifiability.** The atlas reports the event as observed, including weak, null and negative outcomes, and presentation choices that affect apparent severity are documented and applied symmetrically.
 
 ## Caption guardrails
 
@@ -84,7 +84,7 @@ These three sentences appear, verbatim, on any panel that touches the subject na
 
 ## Data sources and licences
 
-`src/sources.yaml` is a machine-readable registry of every source considered. Each entry carries a status, a one-line reason, the terms page, the licence identifier and the deep links. Tests enforce the registry: no fetcher exists for a source without approved or conditional status, and no code refers to an excluded source. Current statuses:
+`src/sources.yaml` is a machine-readable registry of every source considered. Each entry carries a status, a one-line reason, the terms page, the licence identifier and the deep links. Tests enforce the registry: fetchers exist only for sources with approved or conditional status, and excluded sources appear only in the registry. Current statuses:
 
 | Status | Sources |
 |---|---|
@@ -95,12 +95,12 @@ These three sentences appear, verbatim, on any panel that touches the subject na
 | Excluded | EM-DAT (terms prohibit redistribution and derivative databases); Munich Re and Swiss Re catastrophe data (proprietary) |
 | Pending | IDMC; UNDRR DesInventar; GDACS; IFRC GO; Panama Canal Authority |
 
-Excluded sources may inform the accompanying paper. Nothing derived from them enters the atlas.
+Excluded sources may inform the accompanying paper and contribute nothing to the atlas.
 
 ## Repository layout
 
 ```
-app.py                   Dash application; exposes `server` for gunicorn
+app.py                   Dash application, exposing `server` for gunicorn
 run.py                   Command line: `dashboard` serves the site, `update` refreshes snapshots
 config.py                Host, port and debug from environment variables
 src/sources.yaml         Source registry (statuses, reasons, terms, licences, links)
@@ -112,7 +112,7 @@ src/fetchers/            One module per approved source: fetch and parse
 src/layers/              One module per panel: figure and explainer text
 src/layout/              Page builders, three-state legend, explainer rendering
 src/theme.py             Colour tokens and Plotly templates
-assets/                  Stylesheet and the schematic image with its provenance record
+assets/                  Static files served with the page, with provenance notes
 data/curated/            Hand-curated entries
 data/snapshots/          Latest snapshot per source, written by the nightly job
 tests/                   Test suite; `fixtures/` holds copies of source files with provenance notes
@@ -139,7 +139,7 @@ uv run pytest
 
 ## Cite
 
-Cite the software with the concept DOI, which resolves to the latest version: https://doi.org/10.5281/zenodo.22644790. `CITATION.cff` carries the full reference. Cite each data source under its own terms; the source line on each panel gives the attribution.
+Cite the software with the concept DOI, which resolves to the latest version: https://doi.org/10.5281/zenodo.22644790. `CITATION.cff` carries the full reference. Cite each data source under its own terms. The source line on each panel gives the attribution.
 
 ## Corrections
 
