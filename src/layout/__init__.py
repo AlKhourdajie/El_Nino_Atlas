@@ -30,7 +30,7 @@ ABOUT: tuple[str, ...] = (
     "of an event and keep their records apart.",
     "The atlas takes the 2026-27 El Niño as its unit and organises the three records "
     "around it, so that every entry is tied to this event with a stated basis and the "
-    "stages sit on one page in the order in which they happen.",
+    "stages sit on one page, each tied to this event.",
 )
 
 UNAVAILABLE_NOTICE = "Data snapshot not yet available"

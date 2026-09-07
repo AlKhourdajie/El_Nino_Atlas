@@ -12,7 +12,7 @@ The atlas is a research tool in development. Version 0.2.0 (September 2026) carr
 
 ## Why an event-resolved atlas
 
-Hazard catalogues, forecast dashboards and response dashboards each cover one stage of an event and keep their records apart. The atlas takes the 2026-27 El Niño as its unit and organises the three records around it, so that every entry is tied to this event with a stated basis and the stages sit on one page in the order in which they happen. Divergence between the stages is a finding in its own right, so a forecast that failed to verify, an activation whose hazard never arrived and a price that moved for another reason are recorded with the same care as a confirmed impact.
+Hazard catalogues, forecast dashboards and response dashboards each cover one stage of an event and keep their records apart. The atlas takes the 2026-27 El Niño as its unit and organises the three records around it, so that every entry is tied to this event with a stated basis and the stages sit on one page, each tied to this event. Divergence between the stages is a finding in its own right, so a forecast that failed to verify, an activation whose hazard never arrived and a price that moved for another reason are recorded with the same care as a confirmed impact.
 
 ## How to read the atlas
 
