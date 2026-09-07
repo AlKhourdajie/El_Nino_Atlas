@@ -114,9 +114,11 @@ def test_el_nino_seasons_are_shaded_as_in_the_index_panel(figure, events):
     el_nino = [event for event in events if event.phase == "el_nino"]
     assert len(shapes) == len(el_nino) == 2
     assert all(shape.legendgroup == "el_nino" for shape in shapes)
+    # The 2026 run reaches the last season, so its end is None and the
+    # shading runs to this panel's own end of axis (the month after the last price).
     assert [(s.x0, s.x1) for s in shapes] == [
         ("1997-05-01", "1998-07-01"),
-        ("2026-02-01", "2026-09-01"),
+        ("2026-02-01", "2026-08-01"),
     ]
     assert [s.showlegend for s in shapes] == [True, False]
     assert shapes[0].name == theme.PHASE_LABELS["el_nino"]

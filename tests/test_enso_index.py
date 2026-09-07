@@ -38,10 +38,11 @@ def rects(fig: go.Figure) -> list:
 
 
 def test_synthetic_events_are_as_described(events):
+    # The last run reaches the last season in the frame, so it has no end yet.
     assert [(e.phase, e.onset, e.end) for e in events] == [
         ("el_nino", date(1997, 6, 1), date(1998, 5, 1)),
         ("la_nina", date(2010, 7, 1), date(2011, 2, 1)),
-        ("el_nino", date(2026, 3, 1), date(2026, 7, 1)),
+        ("el_nino", date(2026, 3, 1), None),
     ]
 
 
