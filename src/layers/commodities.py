@@ -130,10 +130,12 @@ def build_figure(
     ``series`` must be present with a value for the base month, or a
     ``ValueError`` names the fault. ``events`` are the RONI event records;
     El Niño seasons are shaded, and an event with no end is shaded to the
-    end of the last month in the frame.
+    end of the last month in the frame. The x axis spans the price record,
+    so an event before the first price month cannot widen it.
     """
     validate_frame(frame)
     fig = go.Figure()
+    first_month = "9999-12-31"
     last_month = ""
     for rank, (series_id, label) in enumerate(series, start=1):
         rows = _series(frame, series_id)
@@ -149,12 +151,17 @@ def build_figure(
                 hovertemplate="%{y:.1f} (%{customdata[0]:.2f} %{customdata[1]})<extra></extra>",
             )
         )
+        first_month = min(first_month, rows["date"].iloc[0])
         last_month = max(last_month, rows["date"].iloc[-1])
 
     until = pd.Timestamp(last_month) + pd.DateOffset(months=1)
     add_event_shading(fig, events, until=until.date(), phases=SHADED_PHASES)
     fig.add_hline(y=BASE_VALUE, line=theme.THRESHOLD_LINE)
-    fig.update_xaxes(type="date", hoverformat="%b %Y")
+    fig.update_xaxes(
+        type="date",
+        range=[first_month, until.strftime("%Y-%m-%d")],
+        hoverformat="%b %Y",
+    )
     fig.update_yaxes(title_text="Index (January 2010 = 100)")
     fig.update_layout(hovermode="x unified", **theme.RESPONSIVE_LAYOUT)
     return fig

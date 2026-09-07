@@ -131,6 +131,11 @@ def test_unended_event_is_shaded_to_the_end_of_the_frame(frame, events):
     assert shape.x1 == "2026-08-01"
 
 
+def test_axis_spans_the_price_record_only(figure):
+    # The 1997-98 event is shaded, yet it must not pull the axis back to 1997.
+    assert figure.layout.xaxis.range == ("2009-01-01", "2026-08-01")
+
+
 def test_figure_sets_no_width(figure):
     assert figure.layout.width is None
 
