@@ -7,6 +7,60 @@ stages: **forecast**, **anticipatory action**, **realised impact**.
 **Status: pre-data scaffold.** The app serves a placeholder page with the
 three-state legend. No data are fetched yet; no layers are active.
 
+## What the atlas shows
+
+The atlas follows a single event, the 2026-27 El Niño, from the first
+forecast signal to what can be measured afterwards. Every layer sits in
+one of three stages and is drawn from a source listed in
+`src/sources.yaml`. Nothing is shown from a source whose licence has not
+been cleared, and nothing is shown from EM-DAT.
+
+### Stages and metrics
+
+| Stage | Metric | Source | Status |
+|---|---|---|---|
+| Forecast | Oceanic Niño Index (ONI): three-month running mean of Niño 3.4 sea-surface temperature anomaly, degrees C, monthly | NOAA CPC | approved, parser pending |
+| Forecast | ENSO event spans derived from the ONI under the NOAA convention: phase, onset, end, peak | derived | implemented |
+| Forecast | Global disaster alerts (GDACS) | EC JRC and OCHA | pending licence check |
+| Anticipatory action | Activations: date, country, framework, agencies, amount released (USD), people covered, trigger that fired | CERF, IFRC GO, hand-curated register | curated register in place, no entries yet |
+| Anticipatory action | Food-security outlooks and alerts | FEWS NET | conditional |
+| Realised impact | Monthly commodity prices for coffee (arabica and robusta), cocoa, sugar and rice | World Bank Pink Sheet | approved, parser pending |
+| Realised impact | Food production and producer prices | FAOSTAT | approved |
+| Realised impact | Humanitarian reporting, metadata and links only | OCHA ReliefWeb | conditional |
+| Realised impact | Internal displacement | IDMC | pending licence check |
+| Realised impact | National disaster loss records | UNDRR DesInventar | pending licence check |
+| Realised impact | Panama Canal draught restrictions and transits | Panama Canal Authority | pending licence check |
+| Context | Attribution studies and maps | World Weather Attribution, Carbon Brief | link-only, never fetched |
+
+Figures are authored in degrees C. The ONI thresholds follow NOAA: an
+event is five or more consecutive overlapping three-month seasons at or
+beyond plus or minus 0.5 degrees C.
+
+### How to read it
+
+Every layer classifies each unit (a country, a basin, a commodity, an
+activation) into exactly one of three states:
+
+- **Alert**: an active alert, activation or realised impact.
+- **No alert**: assessed, and nothing to report.
+- **Not assessed**: no assessment exists for that unit or period. This is
+  shown with its own hatched swatch and never in the "No alert" colour,
+  because absence of evidence is not evidence of absence.
+
+The tracker reports the event as observed, including weak, null and
+negative outcomes. Divergence between the stages is content in its own
+right: an activation whose trigger fired but whose hazard did not
+verify is displayed as such. No layer selects or phrases content to make
+the event look stronger or weaker.
+
+Captions on growth effects, price transmission and the 2023-24
+temperature contribution follow the guardrails in `docs/DESIGN.md`:
+growth effects are directionally supported but dollar magnitudes are
+contested; ENSO-to-price transmission is disputed and price
+co-movements are suggestive only; El Niño contributed on the order of
+0.1 degrees C to the 2023-24 records while the forced warming trend
+dominates.
+
 ## Quickstart
 
 Requires [uv](https://docs.astral.sh/uv/) and Python 3.11.
