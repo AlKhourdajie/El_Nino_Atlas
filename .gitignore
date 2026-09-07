@@ -5,6 +5,9 @@ data/processed/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 
+# Private notes, never committed.
+local/
+
 # Environment
 .venv/
 .env
