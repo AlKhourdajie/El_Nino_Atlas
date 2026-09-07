@@ -332,10 +332,10 @@ def explainer() -> Explainer:
         ),
         why=(
             "The impacts the other layers track begin with shifts in seasonal rainfall and "
-            "temperature. The schematic shows where those shifts have tended to occur in past "
-            "El Niño events, so the forecast, anticipatory action and realised impact layers "
-            "can be read against the places where an effect was expected, and against the "
-            "places where none was."
+            "temperature, so a map of where those shifts have tended to occur shows where an "
+            "El Niño signal is expected. It sets the basis on which later realised-impact "
+            "layers are admitted to the atlas, and it lets a reader set realised impacts "
+            "against the places where an effect was expected and the places outside them."
         ),
         not_shown=(
             "The schematic summarises tendencies across past events, and single events differ "
@@ -350,7 +350,7 @@ def explainer() -> Explainer:
         licence_label=LICENCE_LABEL,
         captions=(
             "Draft layer: the schematic is shown as published by the NOAA Climate Prediction "
-            "Center, with the December to February panel above the June to August panel; the "
+            "Center, with the December to February panel above the June to August panel. The "
             "shaded areas are the publisher's own and carry no statistical test.",
         ),
     )

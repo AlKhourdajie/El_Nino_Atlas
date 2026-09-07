@@ -402,12 +402,12 @@ def explainer() -> Explainer:
             "come from."
         ),
         why=(
-            "El Niño is forecast months before the rainfall it disturbs arrives or fails. "
-            "Anticipatory-action frameworks use that lead time to release money before "
-            "the hazard, on a forecast trigger agreed in advance. The map records where "
-            "that happened during this event and where a framework existed and did not "
-            "activate. Both outcomes are results, and a trigger that fired for a hazard "
-            "that did not arrive appears in the same way as one that did."
+            "Because El Niño is forecast months before the rainfall it disturbs arrives or "
+            "fails, anticipatory-action frameworks can release money before the hazard, on "
+            "a forecast trigger agreed in advance. The map records where that happened "
+            "during this event and where a framework existed without activating. Both "
+            "outcomes are recorded, and activations are shown in the same way whether the "
+            "forecast hazard later arrived or failed to."
         ),
         not_shown=(
             "An activation records money released on a forecast trigger. Whether the "

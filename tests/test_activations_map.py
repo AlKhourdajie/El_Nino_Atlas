@@ -235,6 +235,9 @@ def test_explainer_contract():
     assert f"]({layer.CERF_ANTICIPATORY_ACTION_URL})" in ex.how
     assert ex.how.count("](http") == 1, "the how block carries exactly one link"
     assert ex.what.endswith("both are shown as they stand.")
+    assert ex.why.startswith("Because El Niño is forecast months before the rainfall")
+    assert "where a framework existed without activating" in ex.why
+    assert ex.why.endswith("whether the forecast hazard later arrived or failed to.")
     assert ex.not_shown.startswith("An activation records money released on a forecast trigger.")
     assert "lie outside this panel" in ex.not_shown
     for text in (ex.title, ex.what, ex.how, ex.why, ex.not_shown, ex.source_name):

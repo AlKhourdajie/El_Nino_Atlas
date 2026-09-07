@@ -242,10 +242,18 @@ def public_copy() -> list[str]:
 def test_public_copy_rules():
     for text in public_copy():
         assert "—" not in text, text
+        assert ";" not in text, text
         assert " very " not in text and " extremely " not in text, text
     explainer = tc.explainer()
     assert "National Oceanic and Atmospheric Administration" in explainer.what
     assert "increased rainfall across the east-central and eastern Pacific" in explainer.how
+    assert explainer.why.startswith("The impacts the other layers track begin with shifts")
+    assert "shows where an El Niño signal is expected" in explainer.why
+    assert explainer.why.endswith("and the places outside them.")
+    assert explainer.captions[0].endswith(
+        "above the June to August panel. The shaded areas are the publisher's own and carry "
+        "no statistical test."
+    )
     assert "composites computed from public-domain gridded data" in explainer.not_shown
     assert explainer.not_shown.startswith("The schematic summarises tendencies across past events")
     assert "December to February" in explainer.what
