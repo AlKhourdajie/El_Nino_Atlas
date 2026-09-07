@@ -23,6 +23,10 @@ suggestions.
   `redistribution: "yes"`. Everything else is fetched at run time into
   `data/raw/` or `data/processed/`, which are gitignored apart from
   `.gitkeep`.
+- Under `data/` outside `data/curated/`, the only files that may be
+  tracked are `data/snapshots/<source_id>/latest.csv` and `latest.json`
+  for a source whose registry entry has status `approved` and
+  `redistribution: "yes"`; `tests/test_sources_gate.py` enforces this.
 - `link-only` sources are cited and linked, never fetched. `pending`
   sources stay blocked until the registry says otherwise.
 

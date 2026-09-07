@@ -1,5 +1,6 @@
 """Gate tests enforcing the licence registry in src/sources.yaml."""
 
+import re
 import subprocess
 from pathlib import Path
 
@@ -38,6 +39,7 @@ FETCHABLE_STATUSES = {"approved", "conditional"}
 # gate it behaves exactly as excluded.
 NON_FETCHABLE_STATUSES = VALID_STATUSES - FETCHABLE_STATUSES
 EXCLUDED_NEEDLES = ("emdat", "em-dat")
+SNAPSHOT_FILE_RE = re.compile(r"^data/snapshots/([^/]+)/(latest\.csv|latest\.json)$")
 
 
 @pytest.fixture(scope="module")
@@ -96,7 +98,28 @@ def test_no_excluded_source_referenced_under_src():
     assert not offenders, "\n".join(offenders)
 
 
-def test_no_data_files_tracked_in_git():
+def tracked_data_file_is_permitted(path: str, sources: dict[str, dict]) -> bool:
+    """The rule for files under data/ in the git index.
+
+    Human-curated files under data/curated/ and .gitkeep placeholders are
+    always permitted. The snapshot pair data/snapshots/<source_id>/latest.csv
+    and latest.json is permitted only when that source has status approved
+    and redistribution "yes". Nothing else under data/ may be tracked.
+    """
+    if Path(path).name == ".gitkeep" or path.startswith("data/curated/"):
+        return True
+    match = SNAPSHOT_FILE_RE.match(path)
+    if not match:
+        return False
+    entry = sources.get(match.group(1))
+    return (
+        entry is not None
+        and entry["status"] == "approved"
+        and str(entry["redistribution"]).lower() == "yes"
+    )
+
+
+def test_no_data_files_tracked_in_git(sources):
     tracked = subprocess.run(
         ["git", "ls-files", "data"],
         cwd=ROOT,
@@ -104,8 +127,27 @@ def test_no_data_files_tracked_in_git():
         text=True,
         check=True,
     ).stdout.split()
-    # Human-curated files under data/curated/ are the one tracked exception.
-    offenders = [
-        p for p in tracked if Path(p).name != ".gitkeep" and not p.startswith("data/curated/")
-    ]
+    offenders = [p for p in tracked if not tracked_data_file_is_permitted(p, sources)]
     assert not offenders, f"data files must not be committed: {offenders}"
+
+
+@pytest.mark.parametrize(
+    ("path", "permitted"),
+    [
+        ("data/curated/activations.yaml", True),
+        ("data/raw/.gitkeep", True),
+        ("data/snapshots/noaa_oni/latest.csv", True),
+        ("data/snapshots/noaa_oni/latest.json", True),
+        ("data/snapshots/worldbank_pink_sheet/latest.csv", True),
+        ("data/snapshots/noaa_oni/2026-09.csv", False),
+        ("data/snapshots/noaa_oni/raw/oni.ascii.txt", False),
+        ("data/snapshots/fews_net/latest.csv", False),
+        ("data/snapshots/imf_pcps/latest.csv", False),
+        ("data/snapshots/idmc/latest.json", False),
+        ("data/snapshots/not_a_source/latest.csv", False),
+        ("data/raw/oni.ascii.txt", False),
+        ("data/processed/oni.csv", False),
+    ],
+)
+def test_tracked_data_file_rule(sources, path, permitted):
+    assert tracked_data_file_is_permitted(path, sources) is permitted
