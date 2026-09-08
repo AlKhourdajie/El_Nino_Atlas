@@ -68,6 +68,11 @@ def test_five_default_series_in_legend_order(figure):
         "Rice, Thai 5%",
     ]
     assert [trace.legendrank for trace in figure.data] == [1, 2, 3, 4, 5]
+    # Each series carries its light colour and a role and rank for the dark scheme.
+    assert [trace.line.color for trace in figure.data] == theme.SERIES[:5]
+    assert [dict(trace.meta) for trace in figure.data] == [
+        {"role": "series", "rank": rank} for rank in range(5)
+    ]
 
 
 def test_series_are_rebased_to_january_2010(figure):

@@ -20,10 +20,8 @@ from tests.test_activations import discrepancy, example_entry, no_activation_ent
 ORDER = [
     "skip-link",
     "site-nav",
-    "maintainer",
     "opening",
     "about",
-    "time-controls",
     "panel-index",
     "panel-commodities",
     "panel-activations",
@@ -154,8 +152,8 @@ def test_app_imports_and_layout_builds():
 
     assert app_module.server is not None
     assert_in_page_order(app_module.app.layout)
-    assert app_module.PAGE_DATA.graph_keys == ["index", "commodities", "activations"]
-    assert app_module.PAGE_DATA.csv_keys == ["index", "commodities", "activations"]
+    assert app_module.PAGE_DATA.graph_keys == ["index", "prices", "activations"]
+    assert app_module.PAGE_DATA.csv_keys == ["index", "prices", "activations"]
 
 
 def test_page_with_both_snapshots(monkeypatch):
@@ -186,9 +184,22 @@ def test_page_with_both_snapshots(monkeypatch):
     assert ids.index("scope") == ids.index("latest-reading") + 1
     assert_activation_panel(page, entries)
     assert_schematic_panel(page, teleconnections.IMAGE_URL_PATH)
-    # The event select lists the three synthetic events.
-    (select,) = [c for c in walk(page) if isinstance(c, html.Select)]
-    assert len(select.children) == 4
+    assert "Imperial" not in rendered and "Maintained by" not in rendered
+    # Each time-series panel has its own range controls and event select;
+    # the index lists the three synthetic events, the price panel, whose
+    # synthetic record starts in 2009, only the events that reach it.
+    selects = {c.id: c for c in walk(page) if isinstance(c, html.Select)}
+    assert set(selects) == {"event-select-index", "event-select-prices"}
+    assert len(selects["event-select-index"].children) == 4
+    assert len(selects["event-select-prices"].children) == 3
+    ids = component_ids(page)
+    for key in ("index", "prices"):
+        for prefix in ("range-all-", "range-30-", "range-5-", "bands-toggle-", "csv-", "png-"):
+            assert f"{prefix}{key}" in ids
+    (from_button,) = [c for c in walk(page) if getattr(c, "id", None) == "range-all-prices"]
+    assert from_button.children == "From 2009"
+    (index_from,) = [c for c in walk(page) if getattr(c, "id", None) == "range-all-index"]
+    assert index_from.children == "From 1950"
 
 
 def test_served_layout_shows_the_committed_register_without_its_examples():
@@ -253,8 +264,7 @@ def test_page_without_snapshots(monkeypatch):
     assert_activation_panel(page, [])
     # The schematic is a static asset, so it shows whether or not snapshots exist.
     assert_schematic_panel(page, teleconnections.IMAGE_URL_PATH)
-    (select,) = [c for c in walk(page) if isinstance(c, html.Select)]
-    assert len(select.children) == 1
+    assert not [c for c in walk(page) if isinstance(c, html.Select)]
 
 
 def test_commodity_panel_waits_for_the_index_snapshot(monkeypatch):
@@ -353,6 +363,8 @@ def test_figure_build_failure_renders_a_banner(monkeypatch):
     assert "ValueError: series 'RICE_05' mixes units" in str(banner)
     assert "(worldbank_pink_sheet)" in str(banner)
     assert [g.id for g in graphs(page)] == ["graph-index", "activations-map"]
+    ids = component_ids(page)
+    assert "range-all-index" in ids and "range-all-prices" not in ids
 
 
 def test_activation_card_notes_discrepancies(monkeypatch):
@@ -429,19 +441,22 @@ def test_callbacks_cover_state_theme_exports_and_downloads():
     import app as app_module
 
     outputs = set(app_module.app.callback_map)
-    assert "..view-state.data...url.search...bands-toggle.aria-pressed.." in outputs
+    assert (
+        "..view-state.data...url.search...bands-toggle-index.aria-pressed..."
+        "bands-toggle-prices.aria-pressed.."
+    ) in outputs
     assert "state-sink.children" in outputs
     assert "theme-store.data" in outputs and "theme-sink.children" in outputs
     assert "copy-status.children" in outputs
     assert "download.data" in outputs
-    for key in ("index", "commodities", "activations"):
+    for key in ("index", "prices", "activations"):
         assert f"export-sink-{key}.children" in outputs
 
 
 def test_csv_downloads_carry_a_provenance_header():
     import app as app_module
 
-    href = "https://el-nino-atlas.onrender.com/?range=1996-09-01,2026-09-01&bands=off"
+    href = "https://el-nino-atlas.onrender.com/?index_range=1996-09-01,2026-09-01&prices_bands=off"
     for key, builder in app_module.CSV_BUILDERS.items():
         text = builder(app_module.PAGE_DATA, href)
         head = text.splitlines()[:8]
@@ -487,7 +502,7 @@ def test_not_assessed_never_shares_no_alert_colour():
         assert f"legend-{state}" in rendered
 
 
-@pytest.mark.parametrize("key", ["index", "commodities", "activations"])
+@pytest.mark.parametrize("key", ["index", "prices", "activations"])
 def test_export_metadata_carries_one_source_line(key):
     import app as app_module
 

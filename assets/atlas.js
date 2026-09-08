@@ -10,20 +10,36 @@
   "use strict";
 
   var dc = (window.dash_clientside = window.dash_clientside || {});
+  /* Graph keys, shared with the URL grammar and every control id. */
   var GRAPHS = { index: "graph-index", prices: "graph-commodities" };
   var MAP_ID = "activations-map";
-  var TIME_SERIES = [GRAPHS.index, GRAPHS.prices];
-  var RANGE_KEY = "range";
+  var RANGE_SUFFIX = "_range";
+  var BANDS_SUFFIX = "_bands";
   var RANGE_ALL = "all";
-  var BANDS_KEY = "bands";
-  var SERIES_KEYS = ["index", "prices"];
   var SERIES_SEPARATOR = "|";
   var THEME_KEY = "theme-store";
+  var STATE_ORDER = ["not_assessed", "no_alert", "alert"];
   /* Dash redraws a figure from its stored copy after the first interaction
      it reports; the redraw can undo a state applied moments earlier, so the
      applier checks its work after a short settle and applies again. */
   var SETTLE_MS = 600;
   var MAX_PASSES = 3;
+  /* Each state application takes a sequence number; an application that a
+     newer state has superseded stops before its next pass, so the initial
+     default state never fights the state parsed from the URL. */
+  var applySeq = 0;
+
+  function keys() {
+    return Object.keys(GRAPHS);
+  }
+
+  function keyForGraph(id) {
+    var found = null;
+    keys().forEach(function (key) {
+      if (GRAPHS[key] === id) found = key;
+    });
+    return found;
+  }
 
   /* ------------------------------------------------------------ codec */
 
@@ -34,8 +50,27 @@
     return isNaN(parsed.getTime()) ? null : match[1];
   }
 
+  function defaultGraphState() {
+    return { range: null, bands: true, series: null };
+  }
+
   function defaultState() {
-    return { range: null, bands: true, series: {} };
+    var state = {};
+    keys().forEach(function (key) {
+      state[key] = defaultGraphState();
+    });
+    return state;
+  }
+
+  function parseRange(value) {
+    if (value === RANGE_ALL) return RANGE_ALL;
+    var parts = value.split(",");
+    if (parts.length === 2) {
+      var start = isoDate(decodeURIComponent(parts[0]));
+      var end = isoDate(decodeURIComponent(parts[1]));
+      if (start && end && start < end) return [start, end];
+    }
+    return null;
   }
 
   function parseSearch(search) {
@@ -46,41 +81,36 @@
       var eq = pair.indexOf("=");
       var key = eq < 0 ? pair : pair.slice(0, eq);
       var value = eq < 0 ? "" : pair.slice(eq + 1);
-      if (key === RANGE_KEY) {
-        var parts = value.split(",");
-        if (value === RANGE_ALL) {
-          state.range = RANGE_ALL;
-        } else if (parts.length === 2) {
-          var start = isoDate(decodeURIComponent(parts[0]));
-          var end = isoDate(decodeURIComponent(parts[1]));
-          if (start && end && start < end) state.range = [start, end];
+      keys().forEach(function (graph) {
+        if (key === graph + RANGE_SUFFIX) {
+          state[graph].range = parseRange(value);
+        } else if (key === graph + BANDS_SUFFIX) {
+          state[graph].bands = value !== "off";
+        } else if (key === graph) {
+          /* A browser may percent-encode the separator; no series name holds one. */
+          var names = value
+            .replace(/%7C/gi, SERIES_SEPARATOR)
+            .split(SERIES_SEPARATOR)
+            .filter(Boolean)
+            .map(function (n) {
+              return decodeURIComponent(n);
+            });
+          state[graph].series = names.length ? names : null;
         }
-      } else if (key === BANDS_KEY) {
-        state.bands = value !== "off";
-      } else if (SERIES_KEYS.indexOf(key) >= 0) {
-        /* A browser may percent-encode the separator; no series name holds one. */
-        var names = value
-          .replace(/%7C/gi, SERIES_SEPARATOR)
-          .split(SERIES_SEPARATOR)
-          .filter(Boolean)
-          .map(function (n) {
-            return decodeURIComponent(n);
-          });
-        if (names.length) state.series[key] = names;
-      }
+      });
     });
     return state;
   }
 
   function encodeSearch(state) {
     var parts = [];
-    if (state.range === RANGE_ALL) parts.push(RANGE_KEY + "=" + RANGE_ALL);
-    else if (state.range) parts.push(RANGE_KEY + "=" + state.range[0] + "," + state.range[1]);
-    if (state.bands === false) parts.push(BANDS_KEY + "=off");
-    SERIES_KEYS.forEach(function (key) {
-      var names = state.series && state.series[key];
-      if (names && names.length) {
-        parts.push(key + "=" + names.map(encodeURIComponent).join(SERIES_SEPARATOR));
+    keys().forEach(function (graph) {
+      var g = (state && state[graph]) || defaultGraphState();
+      if (g.range === RANGE_ALL) parts.push(graph + RANGE_SUFFIX + "=" + RANGE_ALL);
+      else if (g.range) parts.push(graph + RANGE_SUFFIX + "=" + g.range[0] + "," + g.range[1]);
+      if (g.bands === false) parts.push(graph + BANDS_SUFFIX + "=off");
+      if (g.series && g.series.length) {
+        parts.push(graph + "=" + g.series.map(encodeURIComponent).join(SERIES_SEPARATOR));
       }
     });
     return parts.length ? "?" + parts.join("&") : "";
@@ -92,6 +122,10 @@
 
   function clone(value) {
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function graphState(state, key) {
+    return (state && state[key]) || defaultGraphState();
   }
 
   /* ------------------------------------------------------------ graphs */
@@ -145,10 +179,6 @@
     return all ? null : names;
   }
 
-  function seriesKeyFor(id) {
-    return id === GRAPHS.index ? "index" : id === GRAPHS.prices ? "prices" : null;
-  }
-
   /* null leaves the figure's authored window; "all" shows its whole record. */
   function applyRange(gd, range) {
     var update = {};
@@ -196,41 +226,48 @@
     return indices.length ? window.Plotly.restyle(gd, { visible: values }, indices) : null;
   }
 
-  /* Whether the drawn figure already shows the state. */
-  function matches(entry, state) {
-    var gd = entry.gd;
-    var key = seriesKeyFor(entry.id);
-    if (state.range === RANGE_ALL) {
+  /* Whether the drawn figure already shows its state. */
+  function matches(gd, g) {
+    if (g.range === RANGE_ALL) {
       if (!gd._fullLayout.xaxis.autorange) return false;
-    } else if (state.range) {
+    } else if (g.range) {
       var now = currentRange(gd);
-      if (!now || now[0] !== state.range[0] || now[1] !== state.range[1]) return false;
+      if (!now || now[0] !== g.range[0] || now[1] !== g.range[1]) return false;
     }
-    var bands = state.bands !== false;
+    var bands = g.bands !== false;
     var bandsOk = (gd.layout.shapes || []).every(function (shape) {
       if (!isBand(shape)) return true;
       var visible = shape.visible === undefined ? true : shape.visible;
       return bands ? visible === true : visible === "legendonly";
     });
     if (!bandsOk) return false;
-    var names = key && state.series ? state.series[key] || null : null;
     return (gd.data || []).every(function (trace) {
-      var wanted = !names || names.indexOf(trace.name) >= 0 ? true : "legendonly";
+      var wanted = !g.series || g.series.indexOf(trace.name) >= 0 ? true : "legendonly";
       var now = trace.visible === undefined ? true : trace.visible;
       return now === wanted;
     });
   }
 
-  function applyTo(entry, state) {
-    var key = seriesKeyFor(entry.id);
+  function applyTo(gd, g) {
     var work = [];
-    var r = applyRange(entry.gd, state.range);
+    var r = applyRange(gd, g.range);
     if (r) work.push(r);
-    var b = applyBands(entry.gd, state.bands !== false);
+    var b = applyBands(gd, g.bands !== false);
     if (b) work.push(b);
-    var s = applySeries(entry.gd, key && state.series ? state.series[key] || null : null);
+    var s = applySeries(gd, g.series || null);
     if (s) work.push(s);
-    return Promise.all(work);
+    return Promise.all(work).then(function () {
+      return work.length > 0;
+    });
+  }
+
+  /* Dash redraws a figure from the copy in its store after a layout change
+     it is told about, and that copy does not carry changes made here. Once
+     a figure shows its state, the live figure is written back to the store
+     so every later redraw reproduces it. */
+  function pushFigure(id, gd) {
+    if (!dc.set_props || !gd) return;
+    dc.set_props(id, { figure: clone({ data: gd.data, layout: gd.layout }) });
   }
 
   function sleep(ms) {
@@ -240,22 +277,25 @@
   }
 
   function syncControls(state) {
-    var select = document.getElementById("event-select");
-    if (select) {
-      var wanted = Array.isArray(state.range) ? state.range.join(",") : "";
-      var match = Array.prototype.some.call(select.options, function (o) {
-        return o.value === wanted;
+    keys().forEach(function (key) {
+      var g = graphState(state, key);
+      var select = document.getElementById("event-select-" + key);
+      if (select) {
+        var wanted = Array.isArray(g.range) ? g.range.join(",") : "";
+        var match = Array.prototype.some.call(select.options, function (o) {
+          return o.value === wanted;
+        });
+        select.value = match ? wanted : "";
+      }
+      ["range-all-", "range-30-", "range-5-"].forEach(function (prefix) {
+        var button = document.getElementById(prefix + key);
+        if (button) button.setAttribute("aria-pressed", "false");
       });
-      select.value = match ? wanted : "";
-    }
-    ["range-all", "range-30", "range-5"].forEach(function (id) {
-      var button = document.getElementById(id);
-      if (button) button.setAttribute("aria-pressed", "false");
+      if (g.range === RANGE_ALL) {
+        var all = document.getElementById("range-all-" + key);
+        if (all) all.setAttribute("aria-pressed", "true");
+      }
     });
-    if (state.range === RANGE_ALL) {
-      var all = document.getElementById("range-all");
-      if (all) all.setAttribute("aria-pressed", "true");
-    }
   }
 
   function lastDate(gd) {
@@ -290,37 +330,78 @@
     return stored === "dark" || stored === "light" ? stored : systemScheme();
   }
 
-  /* plotly.js loads after the layout renders, so the wait for drawn figures
-     also waits for the library; nothing is applied until both exist. */
-  function applyScheme(scheme, templateSet) {
+  function stateScale(colours) {
+    var scale = [];
+    STATE_ORDER.forEach(function (state, i) {
+      scale.push([i / STATE_ORDER.length, colours[state]]);
+      scale.push([(i + 1) / STATE_ORDER.length, colours[state]]);
+    });
+    return scale;
+  }
+
+  /* The layout patch for one figure: the template, the band fills and the
+     outline and threshold colours of its shapes and annotations. */
+  function layoutPatch(gd, template) {
+    var data = template.data;
+    var patch = { template: { layout: template.layout } };
+    (gd.layout.shapes || []).forEach(function (shape, i) {
+      if (isBand(shape)) {
+        if (data.bands[shape.legendgroup]) {
+          patch["shapes[" + i + "].fillcolor"] = data.bands[shape.legendgroup];
+        }
+        if (shape.line && shape.line.width) patch["shapes[" + i + "].line.color"] = data.outline;
+        if (shape.label) patch["shapes[" + i + "].label.font.color"] = data.outline;
+      } else if (shape.name === "threshold") {
+        patch["shapes[" + i + "].line.color"] = data.threshold;
+      }
+    });
+    (gd.layout.annotations || []).forEach(function (annotation, i) {
+      if (annotation.name === "threshold") {
+        patch["annotations[" + i + "].font.color"] = data.threshold;
+      }
+    });
+    return patch;
+  }
+
+  /* The restyle for one trace by its meta role, or null. */
+  function traceStyle(trace, data) {
+    var meta = trace.meta || {};
+    if (meta.role === "index-primary") return { "line.color": data.index.primary };
+    if (meta.role === "index-secondary") return { "line.color": data.index.secondary };
+    if (meta.role === "series") return { "line.color": data.series[meta.rank % data.series.length] };
+    if (meta.role === "choropleth") {
+      return { colorscale: [stateScale(data.state)], "marker.line.color": data.map_border };
+    }
+    if (meta.role === "state") {
+      var colour = data.state[meta.state];
+      if (data.state_mark[meta.state] === "outlined") {
+        return { "marker.color": data.map_border, "marker.line.color": colour };
+      }
+      return { "marker.color": colour, "marker.line.color": data.map_border };
+    }
+    return null;
+  }
+
+  function applyScheme(scheme, templates) {
     document.documentElement.setAttribute("data-theme", scheme);
-    var template = templateSet && templateSet[scheme];
-    if (!template) return Promise.resolve();
-    var border = templateSet.map_border ? templateSet.map_border[scheme] : null;
-    return whenDrawn(TIME_SERIES.concat([MAP_ID])).then(function (drawn) {
+    var template = templates && templates[scheme];
+    if (!template || !template.layout || !template.data) return Promise.resolve();
+    var ids = keys().map(function (key) {
+      return GRAPHS[key];
+    });
+    return whenDrawn(ids.concat([MAP_ID])).then(function (drawn) {
       if (!window.Plotly) return null;
       return Promise.all(
         drawn.map(function (entry) {
           var gd = entry.gd;
-          var patch = { template: { layout: template.layout } };
-          (gd.layout.shapes || []).forEach(function (shape, i) {
-            if (isBand(shape) && template.bands && template.bands[shape.legendgroup]) {
-              patch["shapes[" + i + "].fillcolor"] = template.bands[shape.legendgroup];
-            }
+          var updates = [window.Plotly.relayout(gd, layoutPatch(gd, template))];
+          gd.data.forEach(function (trace, i) {
+            var style = traceStyle(trace, template.data);
+            if (style) updates.push(window.Plotly.restyle(gd, style, [i]));
           });
-          var updates = [window.Plotly.relayout(gd, patch)];
-          if (border) {
-            gd.data.forEach(function (trace, i) {
-              if (trace.type === "choropleth") {
-                updates.push(window.Plotly.restyle(gd, { "marker.line.color": border }, [i]));
-              } else if (trace.type === "scattergeo" && trace.marker && trace.marker.symbol === "circle") {
-                updates.push(window.Plotly.restyle(gd, { "marker.line.color": border }, [i]));
-              } else if (trace.type === "scattergeo" && trace.marker && trace.marker.symbol === "circle-open") {
-                updates.push(window.Plotly.restyle(gd, { "marker.color": border }, [i]));
-              }
-            });
-          }
-          return Promise.all(updates);
+          return Promise.all(updates).then(function () {
+            pushFigure(entry.id, gd);
+          });
         })
       );
     });
@@ -372,9 +453,9 @@
 
   document.addEventListener("change", function (event) {
     var target = event.target;
-    if (target && target.id === "event-select" && dc.set_props) {
-      dc.set_props("event-select-store", { data: { value: target.value, at: Date.now() } });
-    }
+    if (!target || !dc.set_props || !target.id || target.id.indexOf("event-select-") !== 0) return;
+    var key = target.id.slice("event-select-".length);
+    dc.set_props("event-select-store-" + key, { data: { value: target.value, at: Date.now() } });
   });
 
   /* --------------------------------------------------- keyboard shims */
@@ -461,20 +542,17 @@
 
   /* -------------------------------------------------- dash callbacks */
 
-  var NO = function () {
-    return [dc.no_update, dc.no_update, dc.no_update];
-  };
-
   dc.atlas = {
-    /* Inputs (read from the callback context by id): url.search, view-state,
-       event-select-store, bands-toggle clicks, the three range buttons, and
-       the relayoutData and restyleData of each time-series figure present.
-       State: the band toggle's aria-pressed attribute.
-       Outputs: view-state, url.search, bands-toggle aria-pressed. */
+    /* Inputs (read from the callback context by id): url.search, view-state
+       and, per time-series figure present, its event-select store, band
+       toggle clicks, three range buttons, relayoutData and restyleData.
+       States: each band toggle's aria-pressed. Outputs: view-state,
+       url.search, then each band toggle's aria-pressed in outputs_list order. */
     syncState: function () {
       var ctx = dc.callback_context;
       var inputs = ctx.inputs || {};
       var states = ctx.states || {};
+      var outputs = ctx.outputs_list || [];
       var triggered = (ctx.triggered || []).map(function (t) {
         return t.prop_id;
       });
@@ -483,105 +561,154 @@
       var state = inputs["view-state.data"] || defaultState();
       var next = clone(state);
 
+      function toggleKeys() {
+        return outputs
+          .filter(function (o) {
+            return o.property === "aria-pressed";
+          })
+          .map(function (o) {
+            return String(o.id).replace("bands-toggle-", "");
+          });
+      }
+
       function pressed(newState) {
-        var wanted = newState.bands === false ? "false" : "true";
-        var current = states["bands-toggle.aria-pressed"];
-        return current === wanted ? dc.no_update : wanted;
+        return toggleKeys().map(function (key) {
+          var wanted = graphState(newState, key).bands === false ? "false" : "true";
+          var current = states["bands-toggle-" + key + ".aria-pressed"];
+          return current === wanted ? dc.no_update : wanted;
+        });
       }
 
       function result(newState, writeUrl) {
-        return [newState, writeUrl ? encodeSearch(newState) : dc.no_update, pressed(newState)];
+        return [newState, writeUrl ? encodeSearch(newState) : dc.no_update].concat(pressed(newState));
+      }
+
+      function nothing() {
+        return [dc.no_update, dc.no_update].concat(
+          toggleKeys().map(function () {
+            return dc.no_update;
+          })
+        );
       }
 
       if (!trigger || trigger === "." || trigger === "url.search") {
         var parsed = parseSearch(search);
-        if (sameState(parsed, state)) return [dc.no_update, dc.no_update, pressed(parsed)];
+        if (sameState(parsed, state)) return [dc.no_update, dc.no_update].concat(pressed(parsed));
         return result(parsed, false);
       }
       if (trigger === "view-state.data") {
         var encoded = encodeSearch(state);
-        return [dc.no_update, encoded === search ? dc.no_update : encoded, dc.no_update];
+        return [dc.no_update, encoded === search ? dc.no_update : encoded].concat(
+          toggleKeys().map(function () {
+            return dc.no_update;
+          })
+        );
       }
 
-      if (trigger.indexOf(".relayoutData") > 0) {
-        var id = trigger.split(".")[0];
+      var id = trigger.split(".")[0];
+      var prop = trigger.split(".")[1];
+      var key = null;
+      var match = /^(event-select-store|bands-toggle|range-all|range-30|range-5)-(.+)$/.exec(id);
+      if (match) key = match[2];
+      else key = keyForGraph(id);
+      if (!key || !next[key]) return nothing();
+      var g = next[key];
+      var gd = graphDiv(GRAPHS[key]);
+
+      if (prop === "relayoutData") {
         var payload = inputs[trigger];
-        if (!payload) return NO();
+        if (!payload) return nothing();
         /* The applier sets the whole "xaxis.range" array; a reader's drag
            reports the two bounds separately. The former is an echo. */
-        if (Object.prototype.hasOwnProperty.call(payload, "xaxis.range")) return NO();
+        if (Object.prototype.hasOwnProperty.call(payload, "xaxis.range")) return nothing();
         if (payload["xaxis.autorange"]) {
-          next.range = RANGE_ALL;
+          g.range = RANGE_ALL;
         } else if (payload["xaxis.range[0]"] && payload["xaxis.range[1]"]) {
           var s = isoDate(payload["xaxis.range[0]"]);
           var e = isoDate(payload["xaxis.range[1]"]);
-          if (s && e && s < e) next.range = [s, e];
+          if (s && e && s < e) g.range = [s, e];
         } else if (
           Object.keys(payload).some(function (k) {
             return /^shapes\[\d+\]\.visible$/.test(k);
           })
         ) {
-          var gd = graphDiv(id);
-          if (!gd) return NO();
-          next.bands = (gd.layout.shapes || []).some(function (shape) {
+          if (!gd) return nothing();
+          g.bands = (gd.layout.shapes || []).some(function (shape) {
             return isBand(shape) && shape.visible !== "legendonly" && shape.visible !== false;
           });
         } else {
-          return NO();
+          return nothing();
         }
-      } else if (trigger.indexOf(".restyleData") > 0) {
-        var rid = trigger.split(".")[0];
-        var g = graphDiv(rid);
-        var key = seriesKeyFor(rid);
-        if (!g || !key) return NO();
-        var names = visibleSeries(g);
-        if (names) next.series[key] = names;
-        else delete next.series[key];
-      } else if (trigger === "range-all.n_clicks") {
-        next.range = RANGE_ALL;
-      } else if (trigger === "range-30.n_clicks" || trigger === "range-5.n_clicks") {
-        var anchor = graphDiv(GRAPHS.index) || graphDiv(GRAPHS.prices);
-        if (!anchor) return NO();
-        var window_ = yearsBack(anchor, trigger === "range-30.n_clicks" ? 30 : 5);
-        if (!window_) return NO();
-        next.range = window_;
-      } else if (trigger === "event-select-store.data") {
+      } else if (prop === "restyleData") {
+        /* A legend click reports "visible"; the scheme switch reports colours
+           and is not a change of the series shown. */
+        var restyle = inputs[trigger];
+        var edits = restyle && restyle[0] ? Object.keys(restyle[0]) : [];
+        if (!gd || edits.indexOf("visible") < 0) return nothing();
+        g.series = visibleSeries(gd);
+      } else if (id.indexOf("range-all-") === 0) {
+        g.range = RANGE_ALL;
+      } else if (id.indexOf("range-30-") === 0 || id.indexOf("range-5-") === 0) {
+        if (!gd) return nothing();
+        var window_ = yearsBack(gd, id.indexOf("range-30-") === 0 ? 30 : 5);
+        if (!window_) return nothing();
+        g.range = window_;
+      } else if (id.indexOf("event-select-store-") === 0) {
         var store = inputs[trigger];
         var value = store && store.value;
-        if (!value) return NO();
+        if (!value) return nothing();
         var bounds = value.split(",");
-        if (bounds.length !== 2) return NO();
-        next.range = [bounds[0], bounds[1]];
-      } else if (trigger === "bands-toggle.n_clicks") {
-        if (!inputs[trigger]) return NO();
-        next.bands = state.bands === false;
+        if (bounds.length !== 2) return nothing();
+        g.range = [bounds[0], bounds[1]];
+      } else if (id.indexOf("bands-toggle-") === 0) {
+        if (!inputs[trigger]) return nothing();
+        g.bands = graphState(state, key).bands === false;
       } else {
-        return NO();
+        return nothing();
       }
-      if (sameState(next, state)) return NO();
+      if (sameState(next, state)) return nothing();
       return result(next, true);
     },
 
-    /* Input: view-state. Applies the state to the drawn figures, checks the
-       result after a settle and applies again while a redraw undid it. */
+    /* Input: view-state. Applies each figure's state, checks the result
+       after a settle and applies again while a redraw undid it. */
     applyState: function (state) {
       state = state || defaultState();
       syncControls(state);
-      return whenDrawn(TIME_SERIES).then(function (drawn) {
+      var seq = ++applySeq;
+      var ids = keys().map(function (key) {
+        return GRAPHS[key];
+      });
+      return whenDrawn(ids).then(function (drawn) {
+        var touched = {};
+        function superseded() {
+          return seq !== applySeq;
+        }
         function pass(attempt) {
+          if (superseded()) return String(Date.now());
           return Promise.all(
             drawn.map(function (entry) {
-              return applyTo(entry, state);
+              return applyTo(entry.gd, graphState(state, keyForGraph(entry.id))).then(
+                function (worked) {
+                  if (worked) touched[entry.id] = true;
+                }
+              );
             })
           )
             .then(function () {
               return sleep(SETTLE_MS);
             })
             .then(function () {
+              if (superseded()) return String(Date.now());
               var settled = drawn.every(function (entry) {
-                return matches(entry, state);
+                return matches(entry.gd, graphState(state, keyForGraph(entry.id)));
               });
-              if (settled || attempt + 1 >= MAX_PASSES) return String(Date.now());
+              if (settled || attempt + 1 >= MAX_PASSES) {
+                drawn.forEach(function (entry) {
+                  if (touched[entry.id]) pushFigure(entry.id, entry.gd);
+                });
+                return String(Date.now());
+              }
               return pass(attempt + 1);
             });
         }
@@ -598,7 +725,7 @@
     },
 
     /* Input: theme-store; State: plotly-templates. Applies the scheme. */
-    applyTheme: function (stored, templateSet) {
+    applyTheme: function (stored, templates) {
       var scheme = effectiveScheme(stored);
       if (!window.__atlasSchemeListener && window.matchMedia) {
         window.__atlasSchemeListener = true;
@@ -609,10 +736,10 @@
           } catch (err) {
             raw = null;
           }
-          if (raw !== "dark" && raw !== "light") applyScheme(systemScheme(), templateSet);
+          if (raw !== "dark" && raw !== "light") applyScheme(systemScheme(), templates);
         });
       }
-      return applyScheme(scheme, templateSet).then(function () {
+      return applyScheme(scheme, templates).then(function () {
         return scheme;
       });
     },

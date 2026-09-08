@@ -369,25 +369,6 @@ code {
 
 /* ------------------------------------------------------- time controls */
 
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  margin-top: var(--space-4);
-  padding: var(--space-1) 0;
-  border-top: var(--hairline) solid var(--rule);
-  border-bottom: var(--hairline) solid var(--rule);
-}
-
-.controls__label {
-  font-weight: 600;
-  font-size: var(--text-sm);
-  color: var(--ink-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .controls__group {
   display: inline-flex;
   gap: var(--space-1);
@@ -525,12 +506,27 @@ code {
   margin: var(--space-1) 0 0;
 }
 
+.card__toolbars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
 .card__toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
-  margin-bottom: var(--space-1);
+}
+
+.card__toolbar--range .controls__select {
+  flex: 1 1 14rem;
+  max-width: 24rem;
+}
+
+.card__toolbar--range .select {
+  width: 100%;
 }
 
 .card__toolbar-label {

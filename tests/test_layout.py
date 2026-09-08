@@ -83,26 +83,22 @@ def test_opening_line_is_verbatim():
     header = layout.opening()
     (lead,) = [c for c in walk(header) if getattr(c, "id", None) == "opening"]
     assert lead.children == layout.OPENING
-    assert component_ids(header) == ["header", "maintainer", "opening", "scope"]
+    assert component_ids(header) == ["header", "opening", "scope"]
 
 
-def test_maintainer_line_sits_under_the_title_before_the_opening_line():
-    title, maintainer, lead, scope = layout.opening().children
+def test_hero_has_no_maintainer_line_and_names_no_affiliation():
+    title, lead, scope = layout.opening().children
     assert isinstance(title, html.H1) and title.children == layout.TITLE
-    assert isinstance(maintainer, html.P) and maintainer.id == "maintainer"
-    assert line_text(maintainer) == "Maintained by Alaa Al Khourdajie, Imperial College London."
-    (link,) = [c for c in walk(maintainer) if isinstance(c, html.A)]
-    assert (link.children, link.href) == (
-        "Alaa Al Khourdajie",
-        "https://sites.google.com/site/akhourdajie/",
-    )
     assert lead.id == "opening"
     assert scope.id == "scope" and scope.children == layout.SCOPE
+    assert "Maintained by" not in str(layout.opening(READING))
+    assert "Imperial" not in str(layout.opening(READING)) + str(layout.footer())
+    assert not hasattr(layout, "AFFILIATION")
 
 
 def test_opening_carries_the_reading_line_directly_beneath_the_lead():
     header = layout.opening(READING)
-    assert component_ids(header) == ["header", "maintainer", "opening", "latest-reading", "scope"]
+    assert component_ids(header) == ["header", "opening", "latest-reading", "scope"]
     (line,) = [c for c in walk(header) if getattr(c, "id", None) == "latest-reading"]
     assert isinstance(line, html.P) and line.children == READING
     assert "latest-reading" not in component_ids(layout.opening(None))
@@ -148,9 +144,9 @@ def test_readme_names_the_maintainer_under_the_live_site_line():
     text = README.read_text(encoding="utf-8")
     assert (
         "\nLive site: https://el-nino-atlas.onrender.com\n\n"
-        "Maintained by [Alaa Al Khourdajie](https://sites.google.com/site/akhourdajie/), "
-        "Imperial College London.\n\n"
+        "Maintained by [Alaa Al Khourdajie](https://sites.google.com/site/akhourdajie/).\n\n"
     ) in text
+    assert "Imperial" not in text
 
 
 def test_nav_anchors_follow_the_page_order_and_carry_the_theme_toggle():
@@ -251,7 +247,7 @@ def test_footer_states_maintainer_licences_and_citation():
     footer = layout.footer()
     assert footer.id == "footer"
     assert footer_lines(footer)[:3] == [
-        "El Niño Atlas is maintained by Alaa Al Khourdajie, Imperial College London. "
+        "El Niño Atlas is maintained by Alaa Al Khourdajie. "
         "ORCID: https://orcid.org/0000-0003-1376-7529",
         "Code: MIT licence, on GitHub. Data: licence stated with each panel.",
         "Cite: https://doi.org/10.5281/zenodo.22644790",
@@ -297,7 +293,6 @@ def test_page_copy_follows_the_rules():
     footer_lines_ = footer_lines(layout.footer())
     lines = (
         layout.OPENING,
-        line_text(layout.maintainer_line()),
         layout.SCOPE,
         *layout.ABOUT,
         *footer_lines_,
@@ -355,6 +350,7 @@ def test_download_toolbar_and_sources_section():
     toolbar = layout.download_toolbar("index")
     ids = component_ids(toolbar)
     assert ids == ["csv-index", "png-index", "svg-index", "export-sink-index"]
+    assert list(layout.GRAPH_IDS) == ["index", "prices", "activations"]
     assert layout.download_toolbar("map", csv=False).children[1].id == "png-map"
     sources = layout.sources_section(
         [layout.SourceEntry("panel-index", EXPLAINER, "2026-09-05T17:00:00Z")]
@@ -365,46 +361,69 @@ def test_download_toolbar_and_sources_section():
     assert "#panel-index" in rendered and "retrieved 2026-09-05T17:00:00Z" in rendered
 
 
-def test_time_controls_and_event_options():
-    events = [
-        Event(
-            "el_nino",
-            date(1997, 5, 1),
-            date(1998, 4, 1),
-            ("MAM 1997", "MAM 1998"),
-            2.28,
-            date(1997, 11, 1),
-        ),
-        Event(
-            "la_nina",
-            date(2026, 4, 1),
-            None,
-            ("AMJ 2026", "JJA 2026"),
-            -1.0,
-            date(2026, 6, 1),
-            True,
-        ),
-    ]
-    options = layout.event_options(events, date(2026, 9, 1))
+EVENTS = [
+    Event(
+        "el_nino",
+        date(1997, 5, 1),
+        date(1998, 4, 1),
+        ("MAM 1997", "MAM 1998"),
+        2.28,
+        date(1997, 11, 1),
+    ),
+    Event(
+        "la_nina",
+        date(2026, 4, 1),
+        None,
+        ("AMJ 2026", "JJA 2026"),
+        -1.0,
+        date(2026, 6, 1),
+        True,
+    ),
+]
+
+
+def test_event_options_and_windows():
+    options = layout.event_options(EVENTS, date(2026, 9, 1))
     assert [o["label"] for o in options] == [
         "El Niño, MAM 1997 to MAM 1998",
         "La Niña, AMJ 2026 to JJA 2026, provisional",
     ]
     assert options[0]["value"] == "1996-04-01,1999-06-01"
     assert options[1]["value"] == "2025-03-01,2027-09-01"
-    controls = layout.time_controls(enso_index.RANGE_BUTTONS, options)
-    assert controls.id == "time-controls"
-    ids = component_ids(controls)
-    assert ["range-all", "range-30", "range-5", "event-select", "bands-toggle"] == [
-        i for i in ids if i not in ("time-controls", "time-range-label")
-    ]
-    buttons = [c for c in walk(controls) if isinstance(c, html.Button)]
-    assert [b.children for b in buttons[:3]] == ["From 1950", "30 years", "5 years"]
-    (select,) = [c for c in walk(controls) if isinstance(c, html.Select)]
-    assert [o.value for o in select.children] == ["", options[0]["value"], options[1]["value"]]
-    toggle = buttons[3]
-    assert toggle.id == "bands-toggle" and toggle.children[1] == layout.BANDS_LABEL
-    assert getattr(toggle, "aria-pressed") == "true"
+    # A panel whose record starts later drops events that ended before it.
+    later = layout.event_options(EVENTS, date(2026, 9, 1), not_before=date(2000, 1, 1))
+    assert [o["label"] for o in later] == ["La Niña, AMJ 2026 to JJA 2026, provisional"]
+
+
+def test_range_toolbar_is_per_panel():
+    options = layout.event_options(EVENTS, date(2026, 9, 1))
+    for key, buttons in (
+        ("index", enso_index.RANGE_BUTTONS),
+        ("prices", layout.range_buttons(1960)),
+    ):
+        toolbar = layout.range_toolbar(key, buttons, options)
+        assert toolbar.id == f"time-controls-{key}"
+        ids = component_ids(toolbar)
+        assert ids[1:] == [
+            f"range-all-{key}",
+            f"range-30-{key}",
+            f"range-5-{key}",
+            f"event-select-{key}",
+            f"bands-toggle-{key}",
+        ]
+        found = [c for c in walk(toolbar) if isinstance(c, html.Button)]
+        assert [b.children for b in found[:3]] == [buttons[0]["label"], "30 years", "5 years"]
+        (select,) = [c for c in walk(toolbar) if isinstance(c, html.Select)]
+        assert [o.value for o in select.children] == ["", options[0]["value"], options[1]["value"]]
+        toggle = found[3]
+        assert toggle.children[1] == layout.BANDS_LABEL
+        assert getattr(toggle, "aria-pressed") == "true"
+    assert layout.range_buttons(1960)[0]["label"] == "From 1960"
+    assert layout.range_buttons(1950)[0]["label"] == enso_index.RANGE_BUTTONS[0]["label"]
+    assert layout.range_buttons(1950)[1:] == enso_index.RANGE_BUTTONS[1:]
+    rows = layout.toolbars(html.Div(id="a"), html.Div(id="b"))
+    assert rows.className == "card__toolbars" and component_ids(rows) == ["a", "b"]
+    assert not hasattr(layout, "time_controls")
 
 
 def test_page_wraps_main_in_a_landmark():

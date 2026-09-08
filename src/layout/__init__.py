@@ -2,7 +2,8 @@
 
 ``app.py`` assembles the page from these builders along the forecast,
 action, impact spine. The page is a skip link, a slim sticky navigation
-bar, the hero, the main column and the footer. Each panel is one card
+bar, the hero (title, opening line, reading line, scope line), the main
+column and the footer, which names the maintainer. Each panel is one card
 with a fixed header grammar: the stage as an overline, the title, one
 sentence on what the panel shows, the source line with its licence
 badge and retrieval stamp, a "Source and method" disclosure holding the
@@ -63,7 +64,6 @@ ERROR_PREFIX = "Data load failed"
 # CITATION.cff; tests/test_layout.py checks them against it.
 MAINTAINER = "Alaa Al Khourdajie"
 MAINTAINER_URL = "https://sites.google.com/site/akhourdajie/"
-AFFILIATION = "Imperial College London"
 ORCID = "0000-0003-1376-7529"
 ORCID_URL = f"https://orcid.org/{ORCID}"
 REPOSITORY_URL = "https://github.com/AlKhourdajie/El_Nino_Atlas"
@@ -137,9 +137,11 @@ FIGURE_HEIGHT: int = theme.RESPONSIVE_LAYOUT["height"]
 # scrolling container, so its rows keep a normal height on narrow screens.
 TEXT_COLUMN_MIN_WIDTH = "20rem"
 
+# Panel keys: the two time-series panels share theirs with the URL grammar
+# in ``src.layout.viewstate``; every control and download id carries one.
 GRAPH_IDS: dict[str, str] = {
     "index": "graph-index",
-    "commodities": "graph-commodities",
+    "prices": "graph-commodities",
     "activations": "activations-map",
 }
 
@@ -220,25 +222,16 @@ def section(title: str, *children, id: str | None = None) -> html.Section:
     )
 
 
-def maintainer_line() -> html.P:
-    """The maintainer line under the title, with the name linked to the personal site."""
-    return html.P(
-        ["Maintained by ", html.A(MAINTAINER, href=MAINTAINER_URL), f", {AFFILIATION}."],
-        id="maintainer",
-        className="hero__maintainer",
-    )
-
-
 def opening(reading: str | None = None) -> html.Header:
-    """The hero: title, maintainer line, opening line, reading line, scope line.
+    """The hero: title, opening line, reading line, scope line.
 
     ``reading`` is the one-line summary of the latest season that
     ``src.layers.enso_index.latest_reading`` builds. It is ``None`` when
-    no index snapshot exists, and the line is then omitted.
+    no index snapshot exists, and the line is then omitted. The
+    maintainer is named in the footer only.
     """
     children: list = [
         html.H1(TITLE, className="hero__title"),
-        maintainer_line(),
         html.P(OPENING, className="hero__lead", id="opening"),
     ]
     if reading is not None:
@@ -279,57 +272,84 @@ def event_window(event: Event, until: date, context_months: int = 12) -> tuple[s
     return start.isoformat(), end.isoformat()
 
 
-def event_options(events: list[Event], until: date) -> list[dict[str, str]]:
-    """The select options for the ENSO events in the data, in date order."""
+def event_options(
+    events: list[Event], until: date, not_before: date | None = None
+) -> list[dict[str, str]]:
+    """The select options for the ENSO events in the data, in date order.
+
+    ``not_before`` drops events that ended before a panel's record starts,
+    so a panel never offers a window with nothing in it.
+    """
     options = []
     for event in events:
+        if not_before is not None and event.end is not None and event.end < not_before:
+            continue
         start, end = event_window(event, until)
         options.append({"label": event_label(event), "value": f"{start},{end}"})
     return options
 
 
-def time_controls(range_buttons: tuple[dict, ...], events: list[dict[str, str]]) -> html.Section:
-    """The shared time-range bar: the record presets, the event select, the band toggle.
+def range_buttons(first_year: int) -> tuple[dict, ...]:
+    """The three range presets for a record starting in ``first_year``.
 
-    ``range_buttons`` are the index panel's ``RANGE_BUTTONS`` records; the
-    first three carry the ids ``range-all``, ``range-30`` and ``range-5``.
-    ``events`` are ``event_options``. The native select reports through
-    ``assets/atlas.js``, which writes its value to the store
-    ``event-select-store``; the band toggle is a button whose
-    ``aria-pressed`` attribute is ``"true"`` while the bands are shown.
+    The same shape as ``src.layers.enso_index.RANGE_BUTTONS``: the whole
+    record, the last 30 years and the last 5 years.
     """
-    ids = ("range-all", "range-30", "range-5")
-    buttons = [
+    return (
+        {"label": f"From {first_year}", "step": "all"},
+        {"label": "30 years", "count": 30, "step": "year", "stepmode": "backward"},
+        {"label": "5 years", "count": 5, "step": "year", "stepmode": "backward"},
+    )
+
+
+def range_toolbar(key: str, buttons: tuple[dict, ...], events: list[dict[str, str]]) -> html.Div:
+    """One panel's time-range controls: the record presets, the event select, the band toggle.
+
+    ``key`` is the panel's URL key (``index`` or ``prices``) and suffixes
+    every id: ``range-all-<key>``, ``range-30-<key>``, ``range-5-<key>``,
+    ``event-select-<key>`` and ``bands-toggle-<key>``. ``buttons`` are the
+    three preset records and ``events`` are ``event_options``. The native
+    select reports through ``assets/atlas.js``, which writes its value to
+    the store ``event-select-store-<key>``; the band toggle is a button
+    whose ``aria-pressed`` attribute is ``"true"`` while the bands show.
+    """
+    ids = (f"range-all-{key}", f"range-30-{key}", f"range-5-{key}")
+    presets = [
         html.Button(button["label"], id=button_id, className="btn", type="button")
-        for button, button_id in zip(range_buttons, ids, strict=True)
+        for button, button_id in zip(buttons, ids, strict=True)
     ]
     select = html.Select(
         [html.Option(EVENT_SELECT_PLACEHOLDER, value="")]
         + [html.Option(option["label"], value=option["value"]) for option in events],
-        id="event-select",
+        id=f"event-select-{key}",
         className="select",
     )
-    return html.Section(
+    return html.Div(
         [
-            html.Span(TIME_RANGE_LABEL, className="controls__label", id="time-range-label"),
-            html.Div(buttons, className="controls__group", role="group"),
+            html.Span(TIME_RANGE_LABEL, className="card__toolbar-label"),
+            html.Div(presets, className="controls__group", role="group"),
             html.Label(
                 [html.Span(EVENT_SELECT_LABEL, className="visually-hidden"), select],
                 className="controls__select",
             ),
             html.Button(
                 [html.Span(className="check", **{"aria-hidden": "true"}), BANDS_LABEL],
-                id="bands-toggle",
+                id=f"bands-toggle-{key}",
                 className="btn btn--ghost controls__check",
                 type="button",
                 **{"aria-pressed": "true"},
             ),
         ],
-        id="time-controls",
-        className="controls",
+        id=f"time-controls-{key}",
+        className="card__toolbar card__toolbar--range",
         role="group",
-        **{"aria-labelledby": "time-range-label"},
+        **{"aria-label": TIME_RANGE_LABEL},
     )
+
+
+def toolbars(*rows) -> html.Div:
+    """The toolbar rows of a card, in order."""
+    return html.Div(list(rows), className="card__toolbars")
 
 
 def graph(
@@ -571,7 +591,7 @@ def footer(build: BuildInfo | None = None) -> html.Footer:
         [
             "El Niño Atlas is maintained by ",
             html.A(MAINTAINER, href=MAINTAINER_URL),
-            f", {AFFILIATION}. ORCID: ",
+            ". ORCID: ",
             html.A(ORCID_URL, href=ORCID_URL),
         ],
         className="footer__line",

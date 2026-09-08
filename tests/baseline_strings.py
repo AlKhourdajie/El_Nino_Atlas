@@ -53,12 +53,13 @@ def baseline_strings(reading: str | None = None) -> dict[str, str]:
     strings: dict[str, str] = {
         "hero.title": layout.TITLE,
         "hero.opening": layout.OPENING,
-        "hero.maintainer": "Maintained by Alaa Al Khourdajie, Imperial College London.",
         "about.0": layout.ABOUT[0],
         "about.1": layout.ABOUT[1],
         "notice.unavailable": layout.UNAVAILABLE_NOTICE,
+        # The maintainer lines changed on 8 September 2026 on the maintainer's
+        # instruction: the hero line went and the affiliation left the footer.
         "footer.maintainer": (
-            "El Niño Atlas is maintained by Alaa Al Khourdajie, Imperial College London. "
+            "El Niño Atlas is maintained by Alaa Al Khourdajie. "
             "ORCID: https://orcid.org/0000-0003-1376-7529"
         ),
         "footer.licence": "Code: MIT licence, on GitHub. Data: licence stated with each panel.",

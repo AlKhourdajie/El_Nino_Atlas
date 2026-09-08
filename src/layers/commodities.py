@@ -137,16 +137,21 @@ def build_figure(
     fig = go.Figure()
     first_month = "9999-12-31"
     last_month = ""
+    series = tuple(series)
     for rank, (series_id, label) in enumerate(series, start=1):
         rows = _series(frame, series_id)
         unit = rows["unit"].iloc[0]
+        colour = theme.SERIES[(rank - 1) % len(theme.SERIES)]
         fig.add_trace(
             go.Scatter(
                 x=rows["date"].tolist(),
                 y=_rebased(rows, series_id).tolist(),
                 name=label,
                 mode="lines",
+                line={"color": colour},
                 legendrank=rank,
+                # The client recolours series by rank when the scheme changes.
+                meta={"role": "series", "rank": rank - 1},
                 customdata=[[value, unit] for value in rows["value"]],
                 hovertemplate="%{y:.1f} (%{customdata[0]:.2f} %{customdata[1]})<extra></extra>",
             )
@@ -156,7 +161,7 @@ def build_figure(
 
     until = pd.Timestamp(last_month) + pd.DateOffset(months=1)
     add_event_shading(fig, events, until=until.date(), phases=SHADED_PHASES)
-    fig.add_hline(y=BASE_VALUE, line=theme.THRESHOLD_LINE)
+    fig.add_hline(y=BASE_VALUE, line=theme.THRESHOLD_LINE, name=theme.THRESHOLD_NAME)
     fig.update_xaxes(
         type="date",
         range=[first_month, until.strftime("%Y-%m-%d")],

@@ -4,10 +4,12 @@ The app is built at import time so that ``gunicorn app:server`` works
 unchanged; ``run.py`` imports the same object for local serving.
 
 ``build_page`` assembles the page: the skip link, the sticky navigation,
-the hero (title, maintainer line, opening line, latest-reading line,
-scope line), the About block, the shared time-range bar, the index
-card, the commodity card, the activation card, the teleconnection
-schematic card, the sources section and the footer. The index and
+the hero (title, opening line, latest-reading line, scope line), the
+About block, the index card, the commodity card, the activation card,
+the teleconnection schematic card, the sources section and the footer,
+which names the maintainer. Each time-series card carries its own
+time-range controls, so the two figures are zoomed and filtered
+independently. The index and
 commodity panels read their snapshots through ``src.data_access``. A
 missing snapshot, the ``FileNotFoundError`` that ``load_frame`` raises,
 renders the panel's explainer with a visible notice and omits the
@@ -21,8 +23,8 @@ shows a static asset.
 
 The callbacks are clientside functions in ``assets/atlas.js`` apart
 from the CSV download, which the server builds from the frames the page
-was assembled from. The view state (shared time range, phase bands,
-isolated series) lives in the URL through ``dcc.Location``.
+was assembled from. The view state (each panel's time range, phase
+bands and isolated series) lives in the URL through ``dcc.Location``.
 """
 
 from __future__ import annotations
@@ -33,7 +35,7 @@ import os
 import subprocess
 from collections import OrderedDict
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import dash
@@ -45,7 +47,7 @@ from src import activations, data_access, layout, theme
 from src.enso_events import Event, enso_event_records, season_label
 from src.layers import activations_map, commodities, enso_index, teleconnections
 from src.layout import viewstate
-from src.plotly_template import TEMPLATES, TOKENS
+from src.plotly_template import TEMPLATES
 from src.schema import registry
 
 logger = logging.getLogger(__name__)
@@ -59,13 +61,13 @@ REALISED_IMPACT = "Realised impact"
 
 MAP_ID = layout.GRAPH_IDS["activations"]
 INDEX_GRAPH_ID = layout.GRAPH_IDS["index"]
-PRICES_GRAPH_ID = layout.GRAPH_IDS["commodities"]
+PRICES_GRAPH_ID = layout.GRAPH_IDS["prices"]
 REGISTER_SOURCE = "data/curated/activations.yaml"
 ACTIVATIONS_REGISTRY_ID = "ocha_cerf_anticipatory_action"
 
 CSV_STEMS: dict[str, str] = {
     "index": "el-nino-atlas-index",
-    "commodities": "el-nino-atlas-commodity-prices",
+    "prices": "el-nino-atlas-commodity-prices",
     "activations": "el-nino-atlas-activations",
 }
 
@@ -190,7 +192,11 @@ def _export_meta(key: str, graph_id: str, attribution: str, retrieved_at: str | 
     )
 
 
-def _index_panel(snapshot, events: list[Event] | None, data: PageData) -> html.Section:
+def _first_year(frame) -> int:
+    return int(min(frame["date"])[:4])
+
+
+def _index_panel(snapshot, events: list[Event] | None, data: PageData, until: date) -> html.Section:
     explainer = enso_index.explainer()
     if isinstance(snapshot, LoadFailure):
         return layout.error_panel(
@@ -212,6 +218,7 @@ def _index_panel(snapshot, events: list[Event] | None, data: PageData) -> html.S
         )
     data.csv_keys.append("index")
     data.graph_keys.append("index")
+    options = layout.event_options(events or [], until)
     panel = layout.panel(
         EVENT,
         explainer,
@@ -219,7 +226,10 @@ def _index_panel(snapshot, events: list[Event] | None, data: PageData) -> html.S
         metadata["retrieved_at"],
         id="panel-index",
         graph_id=INDEX_GRAPH_ID,
-        toolbar=layout.download_toolbar("index"),
+        toolbar=layout.toolbars(
+            layout.range_toolbar("index", enso_index.RANGE_BUTTONS, options),
+            layout.download_toolbar("index"),
+        ),
     )
     attribution = registry()[enso_index.SOURCE_ID]["attribution"]
     panel.children.append(
@@ -279,7 +289,9 @@ def _activation_panel(entries, data: PageData, topojson_url: str) -> html.Sectio
     )
 
 
-def _commodity_panel(snapshot, events: list[Event] | None, data: PageData) -> html.Section:
+def _commodity_panel(
+    snapshot, events: list[Event] | None, data: PageData, until: date
+) -> html.Section:
     explainer = commodities.explainer()
     if isinstance(snapshot, LoadFailure):
         return layout.error_panel(
@@ -303,8 +315,12 @@ def _commodity_panel(snapshot, events: list[Event] | None, data: PageData) -> ht
             source=_source_label(commodities.SOURCE_ID),
             error=_describe(exc),
         )
-    data.csv_keys.append("commodities")
-    data.graph_keys.append("commodities")
+    data.csv_keys.append("prices")
+    data.graph_keys.append("prices")
+    first_year = _first_year(frame)
+    # The price record starts later than the index; events that ended
+    # before it would give the panel an empty window.
+    options = layout.event_options(events, until, not_before=date(first_year, 1, 1))
     panel = layout.panel(
         REALISED_IMPACT,
         explainer,
@@ -312,11 +328,14 @@ def _commodity_panel(snapshot, events: list[Event] | None, data: PageData) -> ht
         metadata["retrieved_at"],
         id="panel-commodities",
         graph_id=PRICES_GRAPH_ID,
-        toolbar=layout.download_toolbar("commodities"),
+        toolbar=layout.toolbars(
+            layout.range_toolbar("prices", layout.range_buttons(first_year), options),
+            layout.download_toolbar("prices"),
+        ),
     )
     attribution = registry()[commodities.SOURCE_ID]["attribution"]
     panel.children.append(
-        _export_meta("commodities", PRICES_GRAPH_ID, attribution, metadata["retrieved_at"])
+        _export_meta("prices", PRICES_GRAPH_ID, attribution, metadata["retrieved_at"])
     )
     return panel
 
@@ -343,19 +362,14 @@ def citation_text() -> str:
 
 
 def _stores(data: PageData) -> list:
-    templates = {
-        "light": TEMPLATES["light"],
-        "dark": TEMPLATES["dark"],
-        "map_border": {
-            "light": TOKENS["data"]["map"]["border_light"],
-            "dark": TOKENS["data"]["map"]["border_dark"],
-        },
-    }
+    # Each scheme's Plotly template and its data colours; the client applies
+    # them in the browser when the scheme changes.
+    templates = {"light": TEMPLATES["light"], "dark": TEMPLATES["dark"]}
     return [
         dcc.Location(id="url", refresh=False),
         dcc.Store(id="view-state", data=viewstate.default_state()),
         dcc.Store(id="theme-store", storage_type="local"),
-        dcc.Store(id="event-select-store"),
+        *[dcc.Store(id=f"event-select-store-{key}") for key in viewstate.GRAPH_KEYS],
         dcc.Store(id="plotly-templates", data=templates),
         dcc.Store(id="citation-text", data=citation_text()),
         dcc.Download(id="download"),
@@ -425,12 +439,8 @@ def assemble(
         layout.opening(reading),
         main=(
             layout.about(),
-            layout.time_controls(
-                enso_index.RANGE_BUTTONS,
-                layout.event_options(events or [], until) if events else [],
-            ),
-            _index_panel(index, events, data),
-            _commodity_panel(prices, events, data),
+            _index_panel(index, events, data, until),
+            _commodity_panel(prices, events, data, until),
             _activation_panel(entries, data, topojson_url),
             teleconnections.build_image_panel(image_src),
             layout.sources_section(sources),
@@ -558,7 +568,7 @@ def activations_csv(data: PageData, href: str) -> str:
     return "\n".join(header + rows) + "\n"
 
 
-CSV_BUILDERS = {"index": index_csv, "commodities": commodities_csv, "activations": activations_csv}
+CSV_BUILDERS = {"index": index_csv, "prices": commodities_csv, "activations": activations_csv}
 
 
 # ------------------------------------------------------------ callbacks
@@ -566,32 +576,29 @@ CSV_BUILDERS = {"index": index_csv, "commodities": commodities_csv, "activations
 
 def register_callbacks(app: dash.Dash, data: PageData) -> None:
     """Wire the clientside callbacks and the CSV download for the panels present."""
-    graphs = {
-        "index": INDEX_GRAPH_ID,
-        "commodities": PRICES_GRAPH_ID,
-        "activations": MAP_ID,
-    }
-    time_series = [graphs[k] for k in ("index", "commodities") if k in data.graph_keys]
+    time_series = [key for key in viewstate.GRAPH_KEYS if key in data.graph_keys]
 
-    inputs = [
-        Input("url", "search"),
-        Input("view-state", "data"),
-        Input("event-select-store", "data"),
-        Input("bands-toggle", "n_clicks"),
-        Input("range-all", "n_clicks"),
-        Input("range-30", "n_clicks"),
-        Input("range-5", "n_clicks"),
-    ]
-    for graph_id in time_series:
-        inputs.append(Input(graph_id, "relayoutData"))
-        inputs.append(Input(graph_id, "restyleData"))
+    inputs = [Input("url", "search"), Input("view-state", "data")]
+    outputs = [Output("view-state", "data"), Output("url", "search")]
+    states = []
+    for key in time_series:
+        graph_id = viewstate.GRAPH_KEYS[key]
+        inputs += [
+            Input(f"event-select-store-{key}", "data"),
+            Input(f"bands-toggle-{key}", "n_clicks"),
+            Input(f"range-all-{key}", "n_clicks"),
+            Input(f"range-30-{key}", "n_clicks"),
+            Input(f"range-5-{key}", "n_clicks"),
+            Input(graph_id, "relayoutData"),
+            Input(graph_id, "restyleData"),
+        ]
+        outputs.append(Output(f"bands-toggle-{key}", "aria-pressed"))
+        states.append(State(f"bands-toggle-{key}", "aria-pressed"))
     app.clientside_callback(
         ClientsideFunction(namespace="atlas", function_name="syncState"),
-        Output("view-state", "data"),
-        Output("url", "search"),
-        Output("bands-toggle", "aria-pressed"),
+        *outputs,
         *inputs,
-        State("bands-toggle", "aria-pressed"),
+        *states,
     )
     app.clientside_callback(
         ClientsideFunction(namespace="atlas", function_name="applyState"),
