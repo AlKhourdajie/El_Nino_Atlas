@@ -137,9 +137,11 @@ FIGURE_HEIGHT: int = theme.RESPONSIVE_LAYOUT["height"]
 # scrolling container, so its rows keep a normal height on narrow screens.
 TEXT_COLUMN_MIN_WIDTH = "20rem"
 
+# Panel keys: the two time-series panels share theirs with the URL grammar
+# in ``src.layout.viewstate``; every control and download id carries one.
 GRAPH_IDS: dict[str, str] = {
     "index": "graph-index",
-    "commodities": "graph-commodities",
+    "prices": "graph-commodities",
     "activations": "activations-map",
 }
 
@@ -270,57 +272,84 @@ def event_window(event: Event, until: date, context_months: int = 12) -> tuple[s
     return start.isoformat(), end.isoformat()
 
 
-def event_options(events: list[Event], until: date) -> list[dict[str, str]]:
-    """The select options for the ENSO events in the data, in date order."""
+def event_options(
+    events: list[Event], until: date, not_before: date | None = None
+) -> list[dict[str, str]]:
+    """The select options for the ENSO events in the data, in date order.
+
+    ``not_before`` drops events that ended before a panel's record starts,
+    so a panel never offers a window with nothing in it.
+    """
     options = []
     for event in events:
+        if not_before is not None and event.end is not None and event.end < not_before:
+            continue
         start, end = event_window(event, until)
         options.append({"label": event_label(event), "value": f"{start},{end}"})
     return options
 
 
-def time_controls(range_buttons: tuple[dict, ...], events: list[dict[str, str]]) -> html.Section:
-    """The shared time-range bar: the record presets, the event select, the band toggle.
+def range_buttons(first_year: int) -> tuple[dict, ...]:
+    """The three range presets for a record starting in ``first_year``.
 
-    ``range_buttons`` are the index panel's ``RANGE_BUTTONS`` records; the
-    first three carry the ids ``range-all``, ``range-30`` and ``range-5``.
-    ``events`` are ``event_options``. The native select reports through
-    ``assets/atlas.js``, which writes its value to the store
-    ``event-select-store``; the band toggle is a button whose
-    ``aria-pressed`` attribute is ``"true"`` while the bands are shown.
+    The same shape as ``src.layers.enso_index.RANGE_BUTTONS``: the whole
+    record, the last 30 years and the last 5 years.
     """
-    ids = ("range-all", "range-30", "range-5")
-    buttons = [
+    return (
+        {"label": f"From {first_year}", "step": "all"},
+        {"label": "30 years", "count": 30, "step": "year", "stepmode": "backward"},
+        {"label": "5 years", "count": 5, "step": "year", "stepmode": "backward"},
+    )
+
+
+def range_toolbar(key: str, buttons: tuple[dict, ...], events: list[dict[str, str]]) -> html.Div:
+    """One panel's time-range controls: the record presets, the event select, the band toggle.
+
+    ``key`` is the panel's URL key (``index`` or ``prices``) and suffixes
+    every id: ``range-all-<key>``, ``range-30-<key>``, ``range-5-<key>``,
+    ``event-select-<key>`` and ``bands-toggle-<key>``. ``buttons`` are the
+    three preset records and ``events`` are ``event_options``. The native
+    select reports through ``assets/atlas.js``, which writes its value to
+    the store ``event-select-store-<key>``; the band toggle is a button
+    whose ``aria-pressed`` attribute is ``"true"`` while the bands show.
+    """
+    ids = (f"range-all-{key}", f"range-30-{key}", f"range-5-{key}")
+    presets = [
         html.Button(button["label"], id=button_id, className="btn", type="button")
-        for button, button_id in zip(range_buttons, ids, strict=True)
+        for button, button_id in zip(buttons, ids, strict=True)
     ]
     select = html.Select(
         [html.Option(EVENT_SELECT_PLACEHOLDER, value="")]
         + [html.Option(option["label"], value=option["value"]) for option in events],
-        id="event-select",
+        id=f"event-select-{key}",
         className="select",
     )
-    return html.Section(
+    return html.Div(
         [
-            html.Span(TIME_RANGE_LABEL, className="controls__label", id="time-range-label"),
-            html.Div(buttons, className="controls__group", role="group"),
+            html.Span(TIME_RANGE_LABEL, className="card__toolbar-label"),
+            html.Div(presets, className="controls__group", role="group"),
             html.Label(
                 [html.Span(EVENT_SELECT_LABEL, className="visually-hidden"), select],
                 className="controls__select",
             ),
             html.Button(
                 [html.Span(className="check", **{"aria-hidden": "true"}), BANDS_LABEL],
-                id="bands-toggle",
+                id=f"bands-toggle-{key}",
                 className="btn btn--ghost controls__check",
                 type="button",
                 **{"aria-pressed": "true"},
             ),
         ],
-        id="time-controls",
-        className="controls",
+        id=f"time-controls-{key}",
+        className="card__toolbar card__toolbar--range",
         role="group",
-        **{"aria-labelledby": "time-range-label"},
+        **{"aria-label": TIME_RANGE_LABEL},
     )
+
+
+def toolbars(*rows) -> html.Div:
+    """The toolbar rows of a card, in order."""
+    return html.Div(list(rows), className="card__toolbars")
 
 
 def graph(
