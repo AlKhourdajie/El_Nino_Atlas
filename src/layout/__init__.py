@@ -2,7 +2,8 @@
 
 ``app.py`` assembles the page from these builders along the forecast,
 action, impact spine. The page is a skip link, a slim sticky navigation
-bar, the hero, the main column and the footer. Each panel is one card
+bar, the hero (title, opening line, reading line, scope line), the main
+column and the footer, which names the maintainer. Each panel is one card
 with a fixed header grammar: the stage as an overline, the title, one
 sentence on what the panel shows, the source line with its licence
 badge and retrieval stamp, a "Source and method" disclosure holding the
@@ -63,7 +64,6 @@ ERROR_PREFIX = "Data load failed"
 # CITATION.cff; tests/test_layout.py checks them against it.
 MAINTAINER = "Alaa Al Khourdajie"
 MAINTAINER_URL = "https://sites.google.com/site/akhourdajie/"
-AFFILIATION = "Imperial College London"
 ORCID = "0000-0003-1376-7529"
 ORCID_URL = f"https://orcid.org/{ORCID}"
 REPOSITORY_URL = "https://github.com/AlKhourdajie/El_Nino_Atlas"
@@ -220,25 +220,16 @@ def section(title: str, *children, id: str | None = None) -> html.Section:
     )
 
 
-def maintainer_line() -> html.P:
-    """The maintainer line under the title, with the name linked to the personal site."""
-    return html.P(
-        ["Maintained by ", html.A(MAINTAINER, href=MAINTAINER_URL), f", {AFFILIATION}."],
-        id="maintainer",
-        className="hero__maintainer",
-    )
-
-
 def opening(reading: str | None = None) -> html.Header:
-    """The hero: title, maintainer line, opening line, reading line, scope line.
+    """The hero: title, opening line, reading line, scope line.
 
     ``reading`` is the one-line summary of the latest season that
     ``src.layers.enso_index.latest_reading`` builds. It is ``None`` when
-    no index snapshot exists, and the line is then omitted.
+    no index snapshot exists, and the line is then omitted. The
+    maintainer is named in the footer only.
     """
     children: list = [
         html.H1(TITLE, className="hero__title"),
-        maintainer_line(),
         html.P(OPENING, className="hero__lead", id="opening"),
     ]
     if reading is not None:
@@ -571,7 +562,7 @@ def footer(build: BuildInfo | None = None) -> html.Footer:
         [
             "El Niño Atlas is maintained by ",
             html.A(MAINTAINER, href=MAINTAINER_URL),
-            f", {AFFILIATION}. ORCID: ",
+            ". ORCID: ",
             html.A(ORCID_URL, href=ORCID_URL),
         ],
         className="footer__line",
