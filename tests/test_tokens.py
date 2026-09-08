@@ -74,8 +74,31 @@ def test_theme_reads_the_tokens(tokens):
     assert theme.PHASE_NEUTRAL == tokens["data"]["phase"]["neutral"]
     assert theme.SERIES == tokens["data"]["series"]
     assert theme.LIGHT["bg"] == tokens["scheme"]["light"]["paper"]
+    assert theme.LIGHT["grid"] == tokens["scheme"]["light"]["grid"]
     assert theme.DARK["panel"] == tokens["scheme"]["dark"]["surface"]
     assert theme.RESPONSIVE_LAYOUT["height"] == tokens["layout"]["figure_height_px"]
+
+
+def test_dark_scheme_carries_its_own_data_colours(build_tokens, tokens):
+    """The dark scheme lightens every data hue so lines and bands keep contrast."""
+    dark = build_tokens.scheme_data(tokens, "dark")
+    light = build_tokens.scheme_data(tokens, "light")
+    assert light == tokens["data"]
+    for key in ("series", "index", "state", "phase", "phase_opacity", "threshold"):
+        assert dark[key] != light[key], key
+    assert dark["state_mark"] == light["state_mark"]
+    assert dark["state"]["not_assessed"] == light["state"]["not_assessed"]
+    assert len(dark["series"]) == len(light["series"]) == 5
+    template = build_tokens.build_template(tokens, "dark")
+    assert template["data"]["series"] == dark["series"]
+    assert template["data"]["bands"] == build_tokens.band_fills(dark)
+    assert template["data"]["outline"] == tokens["scheme"]["dark"]["ink_muted"]
+    assert template["data"]["map_border"] == tokens["data"]["map"]["border_dark"]
+    assert template["layout"]["xaxis"]["gridcolor"] == tokens["scheme"]["dark"]["grid"]
+    assert theme.DATA_DARK == template["data"]
+    light_template = build_tokens.build_template(tokens, "light")
+    assert light_template["data"]["series"] == tokens["data"]["series"]
+    assert light_template["data"]["map_border"] == tokens["data"]["map"]["border_light"]
 
 
 def test_phase_hues_come_from_okabe_ito(tokens):
@@ -84,6 +107,11 @@ def test_phase_hues_come_from_okabe_ito(tokens):
     assert phase["la_nina"] in (OKABE_ITO["blue"], OKABE_ITO["sky_blue"])
     assert tokens["data"]["phase_opacity"]["la_nina"] < tokens["data"]["phase_opacity"]["el_nino"]
     assert tokens["data"]["phase_opacity"]["el_nino"] <= 0.3
+    # The dark scheme keeps the warm and cool hues, lighter, at lower opacity.
+    dark = tokens["data_dark"]
+    assert 20 <= _hue(dark["phase"]["el_nino"]) <= 45
+    assert 195 <= _hue(dark["phase"]["la_nina"]) <= 215
+    assert dark["phase_opacity"]["la_nina"] < dark["phase_opacity"]["el_nino"] <= 0.3
 
 
 def _hue(hex_colour: str) -> float:

@@ -160,6 +160,15 @@ def test_shading_can_be_limited_to_one_phase(events):
 def test_threshold_lines_at_half_a_degree(figure):
     lines = [shape for shape in figure.layout.shapes if shape.type == "line"]
     assert sorted(shape.y0 for shape in lines) == [-0.5, 0.5]
+    # Named so the client can recolour them per scheme, with their annotation.
+    assert all(shape.name == theme.THRESHOLD_NAME for shape in lines)
+    (annotation,) = figure.layout.annotations
+    assert annotation.name == theme.THRESHOLD_NAME and annotation.text == "±0.5 °C"
+
+
+def test_traces_carry_their_roles(figure):
+    roles = {trace.name: trace.meta["role"] for trace in figure.data}
+    assert roles == {"RONI": "index-primary", "ONI": "index-secondary"}
 
 
 def test_range_presets_and_default_window(figure):

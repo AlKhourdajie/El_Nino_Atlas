@@ -284,6 +284,7 @@ def build_figure(entries: list[dict]) -> go.Figure:
             text=text,
             hovertemplate="%{text}<extra></extra>",
             marker={"line": {"color": theme.MAP_BORDER, "width": 0.4}},
+            meta={"role": "choropleth"},
         )
     )
     # One trace per state: its legend entry, and the centroid markers of
@@ -304,6 +305,7 @@ def build_figure(entries: list[dict]) -> go.Figure:
                 marker=_marker(state),
                 hoverinfo="skip",
                 showlegend=True,
+                meta={"role": "state", "state": state},
             )
         )
     fig.update_geos(

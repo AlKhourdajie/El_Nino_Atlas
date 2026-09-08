@@ -47,12 +47,34 @@ def _font_stack(font: dict) -> str:
     return f'"{font["family"]}", {font["fallback"]}'
 
 
-def _scheme_block(scheme: dict, data: dict, opacity_key: str) -> list[str]:
+def scheme_data(tokens: dict, scheme_name: str) -> dict:
+    """The data colours of one scheme: ``data`` with ``data_dark`` laid over it for dark."""
+    data = dict(tokens["data"])
+    if scheme_name == "dark":
+        data.update(tokens.get("data_dark", {}))
+    return data
+
+
+def band_fills(data: dict) -> dict[str, str]:
+    """The band fill per phase as an rgba string, from the hue and opacity."""
+    return {
+        phase: rgba(data["phase"][phase], alpha) for phase, alpha in data["phase_opacity"].items()
+    }
+
+
+def _scheme_block(scheme: dict, data: dict) -> list[str]:
     lines = [f"  --{key.replace('_', '-')}: {value};" for key, value in scheme.items()]
     for phase, colour in data["phase"].items():
-        if phase in data[opacity_key]:
-            alpha = data[opacity_key][phase]
-            lines.append(f"  --band-{phase.replace('_', '-')}: {rgba(colour, alpha)};")
+        lines.append(f"  --phase-{phase.replace('_', '-')}: {colour};")
+    for phase, fill in band_fills(data).items():
+        lines.append(f"  --band-{phase.replace('_', '-')}: {fill};")
+    for state, colour in data["state"].items():
+        lines.append(f"  --state-{state.replace('_', '-')}: {colour};")
+    for index, colour in enumerate(data["series"], start=1):
+        lines.append(f"  --series-{index}: {colour};")
+    lines.append(f"  --index-primary: {data['index']['primary']};")
+    lines.append(f"  --index-secondary: {data['index']['secondary']};")
+    lines.append(f"  --threshold: {data['threshold']};")
     return lines
 
 
@@ -61,7 +83,6 @@ def build_css(tokens: dict) -> str:
     space = tokens["space"]
     layout = tokens["layout"]
     motion = tokens["motion"]
-    data = tokens["data"]
     light = tokens["scheme"]["light"]
     dark = tokens["scheme"]["dark"]
 
@@ -95,28 +116,20 @@ def build_css(tokens: dict) -> str:
     out.append(f"  --motion-fast: {motion['fast_ms']}ms;")
     out.append(f"  --motion: {motion['base_ms']}ms;")
     out.append(f"  --easing: {motion['easing']};")
-    for phase, colour in data["phase"].items():
-        out.append(f"  --phase-{phase.replace('_', '-')}: {colour};")
-    for state, colour in data["state"].items():
-        out.append(f"  --state-{state.replace('_', '-')}: {colour};")
-    for index, colour in enumerate(data["series"], start=1):
-        out.append(f"  --series-{index}: {colour};")
-    out.append(f"  --index-primary: {data['index']['primary']};")
-    out.append(f"  --index-secondary: {data['index']['secondary']};")
-    out.append(f"  --threshold: {data['threshold']};")
-    out += _scheme_block(light, data, "phase_opacity")
+    out += _scheme_block(light, scheme_data(tokens, "light"))
     out.append("  color-scheme: light;")
     out.append("}")
     out.append("")
+    dark_data = scheme_data(tokens, "dark")
     out.append("@media (prefers-color-scheme: dark) {")
     out.append('  :root:not([data-theme="light"]) {')
-    out += ["  " + line for line in _scheme_block(dark, data, "phase_opacity_dark")]
+    out += ["  " + line for line in _scheme_block(dark, dark_data)]
     out.append("    color-scheme: dark;")
     out.append("  }")
     out.append("}")
     out.append("")
     out.append(':root[data-theme="dark"] {')
-    out += _scheme_block(dark, data, "phase_opacity_dark")
+    out += _scheme_block(dark, dark_data)
     out.append("  color-scheme: dark;")
     out.append("}")
     out.append("")
@@ -132,13 +145,12 @@ def build_css(tokens: dict) -> str:
 def build_template(tokens: dict, scheme_name: str) -> dict:
     """The Plotly template for one scheme as a plain dictionary."""
     scheme = tokens["scheme"][scheme_name]
-    data = tokens["data"]
+    data = scheme_data(tokens, scheme_name)
     font = tokens["font"]
-    opacity_key = "phase_opacity_dark" if scheme_name == "dark" else "phase_opacity"
-    bands = {phase: rgba(data["phase"][phase], alpha) for phase, alpha in data[opacity_key].items()}
+    border_key = "border_dark" if scheme_name == "dark" else "border_light"
     axis = {
-        "gridcolor": scheme["rule"],
-        "zerolinecolor": scheme["rule"],
+        "gridcolor": scheme["grid"],
+        "zerolinecolor": scheme["grid"],
         "linecolor": scheme["rule"],
         "tickcolor": scheme["ink_muted"],
         "tickfont": {"color": scheme["ink_muted"]},
@@ -181,9 +193,19 @@ def build_template(tokens: dict, scheme_name: str) -> dict:
                 "showframe": False,
             },
         },
-        # Not a Plotly template key: the band fills the client applies to
-        # the phase shapes when it switches scheme, keyed by legend group.
-        "bands": bands,
+        # Not Plotly template keys: the data colours the client applies to
+        # traces by their meta role, to the phase shapes by legend group and
+        # to the threshold shapes by name when it switches scheme.
+        "data": {
+            "series": list(data["series"]),
+            "index": dict(data["index"]),
+            "state": dict(data["state"]),
+            "state_mark": dict(data["state_mark"]),
+            "threshold": data["threshold"],
+            "outline": scheme["ink_muted"],
+            "bands": band_fills(data),
+            "map_border": data["map"][border_key],
+        },
     }
 
 

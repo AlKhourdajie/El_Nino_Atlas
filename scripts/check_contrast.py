@@ -21,7 +21,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from build_tokens import load_tokens  # noqa: E402
+from build_tokens import load_tokens, scheme_data  # noqa: E402
 
 TEXT_MINIMUM = 4.5
 MARK_MINIMUM = 3.0
@@ -64,9 +64,9 @@ def checks(tokens: dict) -> list[Row]:
 
     A minimum of 0 marks a ratio printed for information only.
     """
-    data = tokens["data"]
     rows: list[Row] = []
     for scheme_name, scheme in tokens["scheme"].items():
+        data = scheme_data(tokens, scheme_name)
         for background in ("paper", "surface"):
             surface = scheme[background]
             for key in TEXT_KEYS:
@@ -80,8 +80,7 @@ def checks(tokens: dict) -> list[Row]:
             marks["threshold"] = data["threshold"]
             for key, colour in marks.items():
                 rows.append((scheme_name, key, background, contrast(colour, surface), MARK_MINIMUM))
-            opacity_key = "phase_opacity_dark" if scheme_name == "dark" else "phase_opacity"
-            for phase, alpha in data[opacity_key].items():
+            for phase, alpha in data["phase_opacity"].items():
                 hue = data["phase"][phase]
                 band = composite(hue, surface, alpha)
                 rows.append(

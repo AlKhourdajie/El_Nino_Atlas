@@ -189,6 +189,10 @@ def test_entries_carry_centroid_markers_in_their_mark_style():
     assert framework.marker.line.color == theme.STATE_COLOURS["no_alert"]
     not_tracked = by_name[layer.STATE_LABELS["not_assessed"]]
     assert not_tracked.locations is None and list(not_tracked.lon) == [None]
+    # Roles let the client recolour the map per scheme.
+    assert choropleth(fig).meta["role"] == "choropleth"
+    assert {t.meta["state"] for t in legend_traces(fig)} == set(STATE_ORDER)
+    assert all(t.meta["role"] == "state" for t in legend_traces(fig))
 
 
 def test_prose_columns_keep_a_minimum_width():

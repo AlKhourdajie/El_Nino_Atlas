@@ -59,15 +59,19 @@ LIGHT: dict[str, str] = {
     "panel": _SCHEME["light"]["surface"],
     "text": _SCHEME["light"]["ink"],
     "muted": _SCHEME["light"]["ink_muted"],
-    "grid": _SCHEME["light"]["rule"],
+    "grid": _SCHEME["light"]["grid"],
 }
 DARK: dict[str, str] = {
     "bg": _SCHEME["dark"]["paper"],
     "panel": _SCHEME["dark"]["surface"],
     "text": _SCHEME["dark"]["ink"],
     "muted": _SCHEME["dark"]["ink_muted"],
-    "grid": _SCHEME["dark"]["rule"],
+    "grid": _SCHEME["dark"]["grid"],
 }
+
+# The dark scheme's data colours, which the client applies in the browser;
+# the figures are authored in the light values above and recoloured there.
+DATA_DARK: dict = TEMPLATES["dark"]["data"]
 
 # Ordered categorical sequence for non-state series.
 SERIES: list[str] = list(_DATA["series"])
@@ -92,6 +96,8 @@ INDEX_LINE_COLOURS: dict[str, str] = {
     "secondary": _DATA["index"]["secondary"],
 }
 THRESHOLD_LINE: dict[str, str | float] = {"color": _DATA["threshold"], "width": 1, "dash": "dot"}
+# The name on threshold shapes and annotations, which the client recolours per scheme.
+THRESHOLD_NAME = "threshold"
 MAP_BORDER: str = _DATA["map"]["border_light"]
 
 # Shared figure layout for narrow screens: the figure fills its column

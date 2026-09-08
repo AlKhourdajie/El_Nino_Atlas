@@ -15,7 +15,10 @@ TOKENS: dict = json.loads(
     "scripts/build_tokens.py emits assets/tokens.css and src/plotly_template.py;",
     "tests/test_tokens.py fails when either is stale. Colours are sRGB hex.",
     "The ENSO phase hues come from the Okabe-Ito set and are drawn only as",
-    "low-opacity bands; the three-state hues stay distinct from them."
+    "low-opacity bands; the three-state hues stay distinct from them.",
+    "data holds the light-scheme data colours; data_dark overrides them for",
+    "the dark scheme with lighter tints of the same hues, so lines and",
+    "bands keep their contrast on the dark surface."
   ],
   "font": {
     "display": {
@@ -87,6 +90,7 @@ TOKENS: dict = json.loads(
       "ink": "#1C1B19",
       "ink_muted": "#5F5B55",
       "rule": "#DAD5CB",
+      "grid": "#E4E0D8",
       "accent": "#0B5C8C",
       "accent_ink": "#FFFFFF",
       "skeleton": "#ECE7DD",
@@ -100,6 +104,7 @@ TOKENS: dict = json.loads(
       "ink": "#ECE8E1",
       "ink_muted": "#B0AAA0",
       "rule": "#33373D",
+      "grid": "#2A2E34",
       "accent": "#8CC4EA",
       "accent_ink": "#15171A",
       "skeleton": "#2A2E34",
@@ -117,10 +122,6 @@ TOKENS: dict = json.loads(
     "phase_opacity": {
       "el_nino": 0.26,
       "la_nina": 0.2
-    },
-    "phase_opacity_dark": {
-      "el_nino": 0.38,
-      "la_nina": 0.3
     },
     "phase_outline": {
       "el_nino": null,
@@ -152,6 +153,34 @@ TOKENS: dict = json.loads(
       "border_light": "#FFFFFF",
       "border_dark": "#15171A"
     }
+  },
+  "data_dark": {
+    "phase": {
+      "el_nino": "#FFB450",
+      "la_nina": "#78BEF0",
+      "neutral": "#999999"
+    },
+    "phase_opacity": {
+      "el_nino": 0.24,
+      "la_nina": 0.18
+    },
+    "state": {
+      "alert": "#F0788C",
+      "no_alert": "#4FC39F",
+      "not_assessed": "#8F8A82"
+    },
+    "series": [
+      "#8ED0F5",
+      "#F5A860",
+      "#5AD1AC",
+      "#EDB3D6",
+      "#EAD66A"
+    ],
+    "index": {
+      "primary": "#8ED0F5",
+      "secondary": "#9C968D"
+    },
+    "threshold": "#8F8A82"
   }
 }
 """
@@ -183,8 +212,8 @@ TEMPLATES: dict = json.loads(
         "#7A6A00"
       ],
       "xaxis": {
-        "gridcolor": "#DAD5CB",
-        "zerolinecolor": "#DAD5CB",
+        "gridcolor": "#E4E0D8",
+        "zerolinecolor": "#E4E0D8",
         "linecolor": "#DAD5CB",
         "tickcolor": "#5F5B55",
         "tickfont": {
@@ -198,8 +227,8 @@ TEMPLATES: dict = json.loads(
         "automargin": true
       },
       "yaxis": {
-        "gridcolor": "#DAD5CB",
-        "zerolinecolor": "#DAD5CB",
+        "gridcolor": "#E4E0D8",
+        "zerolinecolor": "#E4E0D8",
         "linecolor": "#DAD5CB",
         "tickcolor": "#5F5B55",
         "tickfont": {
@@ -245,9 +274,35 @@ TEMPLATES: dict = json.loads(
         "showframe": false
       }
     },
-    "bands": {
-      "el_nino": "rgba(230,159,0,0.26)",
-      "la_nina": "rgba(86,180,233,0.2)"
+    "data": {
+      "series": [
+        "#0072B2",
+        "#D55E00",
+        "#009E73",
+        "#A8529B",
+        "#7A6A00"
+      ],
+      "index": {
+        "primary": "#0072B2",
+        "secondary": "#86817A"
+      },
+      "state": {
+        "alert": "#C8324D",
+        "no_alert": "#0E8064",
+        "not_assessed": "#8F8A82"
+      },
+      "state_mark": {
+        "alert": "filled",
+        "no_alert": "outlined",
+        "not_assessed": "hatched"
+      },
+      "threshold": "#86817A",
+      "outline": "#5F5B55",
+      "bands": {
+        "el_nino": "rgba(230,159,0,0.26)",
+        "la_nina": "rgba(86,180,233,0.2)"
+      },
+      "map_border": "#FFFFFF"
     }
   },
   "dark": {
@@ -266,15 +321,15 @@ TEMPLATES: dict = json.loads(
         }
       },
       "colorway": [
-        "#0072B2",
-        "#D55E00",
-        "#009E73",
-        "#A8529B",
-        "#7A6A00"
+        "#8ED0F5",
+        "#F5A860",
+        "#5AD1AC",
+        "#EDB3D6",
+        "#EAD66A"
       ],
       "xaxis": {
-        "gridcolor": "#33373D",
-        "zerolinecolor": "#33373D",
+        "gridcolor": "#2A2E34",
+        "zerolinecolor": "#2A2E34",
         "linecolor": "#33373D",
         "tickcolor": "#B0AAA0",
         "tickfont": {
@@ -288,8 +343,8 @@ TEMPLATES: dict = json.loads(
         "automargin": true
       },
       "yaxis": {
-        "gridcolor": "#33373D",
-        "zerolinecolor": "#33373D",
+        "gridcolor": "#2A2E34",
+        "zerolinecolor": "#2A2E34",
         "linecolor": "#33373D",
         "tickcolor": "#B0AAA0",
         "tickfont": {
@@ -335,9 +390,35 @@ TEMPLATES: dict = json.loads(
         "showframe": false
       }
     },
-    "bands": {
-      "el_nino": "rgba(230,159,0,0.38)",
-      "la_nina": "rgba(86,180,233,0.3)"
+    "data": {
+      "series": [
+        "#8ED0F5",
+        "#F5A860",
+        "#5AD1AC",
+        "#EDB3D6",
+        "#EAD66A"
+      ],
+      "index": {
+        "primary": "#8ED0F5",
+        "secondary": "#9C968D"
+      },
+      "state": {
+        "alert": "#F0788C",
+        "no_alert": "#4FC39F",
+        "not_assessed": "#8F8A82"
+      },
+      "state_mark": {
+        "alert": "filled",
+        "no_alert": "outlined",
+        "not_assessed": "hatched"
+      },
+      "threshold": "#8F8A82",
+      "outline": "#B0AAA0",
+      "bands": {
+        "el_nino": "rgba(255,180,80,0.24)",
+        "la_nina": "rgba(120,190,240,0.18)"
+      },
+      "map_border": "#15171A"
     }
   }
 }

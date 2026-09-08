@@ -232,7 +232,9 @@ def _line(
     width: float,
     rank: int,
     phases: dict[str, str],
+    role: str,
 ) -> go.Scatter:
+    """One index line; ``role`` tags the trace so the client can recolour it per scheme."""
     seasons = [season_label(text) for text in rows["date"]]
     customdata = [[season, phases.get(season, "")] for season in seasons]
     return go.Scatter(
@@ -242,6 +244,7 @@ def _line(
         mode="lines",
         line={"color": colour, "width": width},
         legendrank=rank,
+        meta={"role": role},
         customdata=customdata,
         hovertemplate=(
             f"{name} %{{y:.2f}} °C (%{{customdata[0]}}) %{{customdata[1]}}<extra></extra>"
@@ -340,21 +343,42 @@ def build_figure(frame: pd.DataFrame, events: Iterable[Event]) -> go.Figure:
 
     fig = go.Figure()
     fig.add_trace(
-        _line(secondary, SECONDARY_SERIES, theme.INDEX_LINE_COLOURS["secondary"], 1.2, 2, phases)
+        _line(
+            secondary,
+            SECONDARY_SERIES,
+            theme.INDEX_LINE_COLOURS["secondary"],
+            1.2,
+            2,
+            phases,
+            "index-secondary",
+        )
     )
     fig.add_trace(
-        _line(primary, PRIMARY_SERIES, theme.INDEX_LINE_COLOURS["primary"], 2.2, 1, phases)
+        _line(
+            primary,
+            PRIMARY_SERIES,
+            theme.INDEX_LINE_COLOURS["primary"],
+            2.2,
+            1,
+            phases,
+            "index-primary",
+        )
     )
     add_event_shading(fig, events, until=x_end.date())
+    # The threshold shapes and their annotation carry the name the client
+    # uses to recolour them per scheme.
     fig.add_hline(
         y=THRESHOLD_C,
         line=theme.THRESHOLD_LINE,
-        annotation_text=f"±{THRESHOLD_C} °C",
+        name=theme.THRESHOLD_NAME,
+        annotation={
+            "text": f"±{THRESHOLD_C} °C",
+            "name": theme.THRESHOLD_NAME,
+            "font": {"size": 11, "color": theme.MUTED_LINE},
+        },
         annotation_position="top left",
-        annotation_font_size=11,
-        annotation_font_color=theme.MUTED_LINE,
     )
-    fig.add_hline(y=-THRESHOLD_C, line=theme.THRESHOLD_LINE)
+    fig.add_hline(y=-THRESHOLD_C, line=theme.THRESHOLD_LINE, name=theme.THRESHOLD_NAME)
 
     fig.update_xaxes(type="date", range=[_iso(x_start), _iso(x_end)], hoverformat="%b %Y")
     fig.update_yaxes(title_text="Anomaly (°C)", zeroline=True)
