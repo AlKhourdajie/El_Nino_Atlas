@@ -3,7 +3,7 @@
   "files": [
     {
       "bytes": 586735,
-      "retrieved_at": "2026-09-09T08:12:26Z",
+      "retrieved_at": "2026-09-10T08:11:51Z",
       "sha256": "9fdcfa8a2aed9a1bb545a10c1a5ce036c6a0acd4766f450424ca800b4b5a0225",
       "url": "https://thedocs.worldbank.org/en/doc/74e8be41ceb20fa0da750cda2f6b9e4e-0050012026/related/CMO-Historical-Data-Monthly.xlsx"
     }
@@ -13,7 +13,7 @@
   "last_date": "2026-08-01",
   "licence_id": "CC-BY-4.0",
   "raw_sha256": "9fdcfa8a2aed9a1bb545a10c1a5ce036c6a0acd4766f450424ca800b4b5a0225",
-  "retrieved_at": "2026-09-09T08:12:26Z",
+  "retrieved_at": "2026-09-10T08:11:51Z",
   "row_count": 4000,
   "series_ids": [
     "COCOA",
