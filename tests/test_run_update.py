@@ -83,7 +83,7 @@ def test_pink_sheet_parse_reads_the_fetched_workbook():
     frame = worldbank_pink_sheet.parse(
         (fetched("https://thedocs.worldbank.org/x/CMO-Historical-Data-Monthly.xlsx", XLSX_BYTES),)
     )
-    assert len(frame) == 5 * 800
+    assert len(frame) == 6 * 800
     with pytest.raises(ValueError, match="exactly one fetched workbook"):
         worldbank_pink_sheet.parse(())
 

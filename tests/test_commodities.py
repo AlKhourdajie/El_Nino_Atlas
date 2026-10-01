@@ -21,6 +21,7 @@ UNITS = {
     "COCOA": "USD/kg",
     "SUGAR_WLD": "USD/kg",
     "RICE_05": "USD/mt",
+    "PALM_OIL": "USD/mt",
 }
 LEVELS = {
     "COFFEE_ARABIC": 3.0,
@@ -28,6 +29,7 @@ LEVELS = {
     "COCOA": 2.5,
     "SUGAR_WLD": 0.4,
     "RICE_05": 500.0,
+    "PALM_OIL": 800.0,
 }
 
 
@@ -59,19 +61,20 @@ def rects(fig) -> list:
     return [shape for shape in fig.layout.shapes if shape.type == "rect"]
 
 
-def test_five_default_series_in_legend_order(figure):
+def test_six_default_series_in_legend_order(figure):
     assert [trace.name for trace in figure.data] == [
         "Coffee, arabica",
         "Coffee, robusta",
         "Cocoa",
         "Sugar, world",
         "Rice, Thai 5%",
+        "Palm oil",
     ]
-    assert [trace.legendrank for trace in figure.data] == [1, 2, 3, 4, 5]
+    assert [trace.legendrank for trace in figure.data] == [1, 2, 3, 4, 5, 6]
     # Each series carries its light colour and a role and rank for the dark scheme.
-    assert [trace.line.color for trace in figure.data] == theme.SERIES[:5]
+    assert [trace.line.color for trace in figure.data] == theme.SERIES[:6]
     assert [dict(trace.meta) for trace in figure.data] == [
-        {"role": "series", "rank": rank} for rank in range(5)
+        {"role": "series", "rank": rank} for rank in range(6)
     ]
 
 

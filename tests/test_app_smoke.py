@@ -35,6 +35,7 @@ UNITS = {
     "COCOA": "USD/kg",
     "SUGAR_WLD": "USD/kg",
     "RICE_05": "USD/mt",
+    "PALM_OIL": "USD/mt",
 }
 
 

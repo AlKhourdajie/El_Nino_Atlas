@@ -48,13 +48,13 @@ Hazard catalogues, forecast dashboards and response dashboards each cover one st
 
 ### Realised impact: commodity prices
 
-**What this shows.** Monthly world prices for five agricultural commodities: arabica coffee, robusta coffee, cocoa, sugar and rice. Each series is rebased so that January 2010 equals 100, which puts five different units on one axis. Hovering over a point shows the nominal price in its own unit. Shading marks El Niño seasons as in the index panel, so that price movements can be read against the state of the event.
+**What this shows.** Monthly world prices for six agricultural commodities: arabica coffee, robusta coffee, cocoa, sugar, rice and palm oil. Each series is rebased so that January 2010 equals 100, which puts six series with different units on one axis. Hovering over a point shows the nominal price in its own unit. Shading marks El Niño seasons as in the index panel, so that price movements can be read against the state of the event.
 
 **How it is measured.** The World Bank's Commodity Price Data, known as the Pink Sheet, is a monthly release of nominal US dollar prices for energy, agricultural, fertiliser and metal commodities, most series from 1960, alongside price indices for each group. Each price is the monthly average for a stated grade in a stated market. The release and its documentation are on the [World Bank commodity markets page](https://www.worldbank.org/en/research/commodity-markets).
 
-**Why it matters for El Niño.** Coffee, cocoa, sugar and rice are grown in regions where El Niño shifts rainfall and temperature, so their world prices are among the first public series in which a realised effect on food and export earnings could appear. The panel places the price series beside the El Niño seasons so that the reader can see whether the two align during this event or diverge.
+**Why it matters for El Niño.** Coffee, cocoa, sugar, rice and palm oil are grown in regions where El Niño shifts rainfall and temperature, so their world prices are among the first public series in which a realised effect on food and export earnings could appear. The panel places the price series beside the El Niño seasons so that the reader can see whether the two align during this event or diverge.
 
-**What it does not show.** Co-movement here is descriptive, since prices respond to many drivers, among them stocks, exchange rates, energy and fertiliser costs, trade policy and demand, and a price move during an El Niño season therefore stands as an observation without attribution or size estimate. The series are nominal, so long-run movements include inflation, and they are world prices, distinct from what producers received or consumers paid in any one country.
+**What it does not show.** Co-movement here is descriptive, since prices respond to many drivers, among them stocks, exchange rates, energy and fertiliser costs, trade policy and demand, and a price move during an El Niño season therefore stands as an observation without attribution or size estimate. The series are nominal, so long-run movements include inflation, and they are world prices, distinct from what producers received or consumers paid in any one country. The palm oil series joins several grades and markets over time, as the Pink Sheet documentation lists.
 
 ### Where El Niño usually matters: draft schematic
 
