@@ -142,7 +142,8 @@ TOKENS: dict = json.loads(
       "#D55E00",
       "#009E73",
       "#A8529B",
-      "#7A6A00"
+      "#7A6A00",
+      "#3A3A3A"
     ],
     "index": {
       "primary": "#0072B2",
@@ -174,7 +175,8 @@ TOKENS: dict = json.loads(
       "#F5A860",
       "#5AD1AC",
       "#EDB3D6",
-      "#EAD66A"
+      "#EAD66A",
+      "#D9D9D9"
     ],
     "index": {
       "primary": "#8ED0F5",
@@ -209,7 +211,8 @@ TEMPLATES: dict = json.loads(
         "#D55E00",
         "#009E73",
         "#A8529B",
-        "#7A6A00"
+        "#7A6A00",
+        "#3A3A3A"
       ],
       "xaxis": {
         "gridcolor": "#E4E0D8",
@@ -280,7 +283,8 @@ TEMPLATES: dict = json.loads(
         "#D55E00",
         "#009E73",
         "#A8529B",
-        "#7A6A00"
+        "#7A6A00",
+        "#3A3A3A"
       ],
       "index": {
         "primary": "#0072B2",
@@ -325,7 +329,8 @@ TEMPLATES: dict = json.loads(
         "#F5A860",
         "#5AD1AC",
         "#EDB3D6",
-        "#EAD66A"
+        "#EAD66A",
+        "#D9D9D9"
       ],
       "xaxis": {
         "gridcolor": "#2A2E34",
@@ -396,7 +401,8 @@ TEMPLATES: dict = json.loads(
         "#F5A860",
         "#5AD1AC",
         "#EDB3D6",
-        "#EAD66A"
+        "#EAD66A",
+        "#D9D9D9"
       ],
       "index": {
         "primary": "#8ED0F5",

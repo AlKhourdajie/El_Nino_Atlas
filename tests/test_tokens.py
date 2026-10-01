@@ -88,7 +88,7 @@ def test_dark_scheme_carries_its_own_data_colours(build_tokens, tokens):
         assert dark[key] != light[key], key
     assert dark["state_mark"] == light["state_mark"]
     assert dark["state"]["not_assessed"] == light["state"]["not_assessed"]
-    assert len(dark["series"]) == len(light["series"]) == 5
+    assert len(dark["series"]) == len(light["series"]) == 6
     template = build_tokens.build_template(tokens, "dark")
     assert template["data"]["series"] == dark["series"]
     assert template["data"]["bands"] == build_tokens.band_fills(dark)
