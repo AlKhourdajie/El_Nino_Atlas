@@ -68,6 +68,7 @@ DEFAULT_SUBSET: tuple[str, ...] = (
     "COCOA",
     "SUGAR_WLD",
     "RICE_05",
+    "PALM_OIL",
 )
 UNAVAILABLE_MARKERS = frozenset({"…", "..."})
 

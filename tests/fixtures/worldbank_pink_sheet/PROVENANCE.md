@@ -42,9 +42,11 @@ the deep link as durable. The same page linked
   workbook's own note (sheet `Description`, cell B130) reads: "Periods
   where data are unavailable are indicated by "..". Column `DAP` uses a
   three-dot string for 1960M01 to 1966M12, and four cells of
-  `Rice, Thai 25%` contain `#VALUE!`. The five default series
+  `Rice, Thai 25%` contain `#VALUE!`. The six default series
   (`Cocoa` column L, `Coffee, Arabica` M, `Coffee, Robusta` N,
-  `Rice, Thai 5%` AG, `Sugar, world` AV) are numeric in all 800 rows.
+  `Palm oil` W, `Rice, Thai 5%` AG, `Sugar, world` AV) are numeric in
+  all 800 rows. `Palm oil` was added to the defaults on 1 October 2026
+  and checked against this same file.
   The name in cell AG5 carries a trailing space in the workbook.
 
 ## Terms
@@ -60,10 +62,12 @@ the deep link as durable. The same page linked
   format: The World Bank: Dataset name: Data source (if known)." The
   dataset name on the workbook is "World Bank Commodity Price Data (The
   Pink Sheet)". The `Description` sheet names the underlying providers
-  per series (for the five default series: the International Cocoa
-  Organization, the International Coffee Organization, the International
-  Sugar Organization, Bloomberg Finance L.P., Thomson Reuters Datastream
-  and the World Bank).
+  per series (for the five original default series: the International
+  Cocoa Organization, the International Coffee Organization, the
+  International Sugar Organization, Bloomberg Finance L.P., Thomson
+  Reuters Datastream and the World Bank; for `Palm oil`: S&P Global,
+  Bloomberg Finance L.P., ISTA Mielke GmbH Oil World, the US Department
+  of Agriculture and the World Bank).
 - The terms add a mandatory dispute-resolution clause to CC BY 4.0, require
   the same acknowledgement in any sub-licence, and note that some
   third-party data may carry different conditions.

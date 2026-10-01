@@ -46,6 +46,7 @@ PINK_SHEET_SERIES = [
     ("COCOA", "Cocoa", "$/kg"),
     ("SUGAR_WLD", "Sugar, world", "$/kg"),
     ("RICE_05", "Rice, Thai 5%", "$/mt"),
+    ("PALM_OIL", "Palm oil", "$/mt"),
 ]
 FETCHABLE_STATUSES = {"approved", "conditional"}
 # Superseded is an editorial choice, not a licence bar, but for the fetcher

@@ -54,6 +54,7 @@ def test_units_come_from_row_six():
         "COCOA": "$/kg",  # L6 "($/kg)"
         "SUGAR_WLD": "$/kg",  # AV6 "($/kg)"
         "RICE_05": "$/mt",  # AG6 "($/mt)"
+        "PALM_OIL": "$/mt",  # W6 "($/mt)"
     }
     assert units == {s["code"]: s["unit"] for s in registered_series().values()}
 
@@ -66,6 +67,8 @@ def test_spot_values():
     assert frame["SUGAR_WLD", "2015-12-01"] == 0.32  # AV678 (row "2015M12")
     assert frame["COFFEE_ROBUS", "2026-08-01"] == 3.98  # N806 (row "2026M08")
     assert frame["COFFEE_ARABIC", "2026-08-01"] == 7.97  # M806 (row "2026M08")
+    assert frame["PALM_OIL", "2010-01-01"] == 831  # W607 (row "2010M01")
+    assert frame["PALM_OIL", "2026-08-01"] == 1117  # W806 (row "2026M08")
 
 
 def test_series_names_are_matched_after_stripping_whitespace():

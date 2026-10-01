@@ -6,8 +6,8 @@ Sheet), registry id ``worldbank_pink_sheet`` in ``src/sources.yaml``
 through ``src.data_access.load_frame`` and the events through the index
 panel's RONI series.
 
-``build_figure`` rebases the five default series to an index with
-January 2010 equal to 100 so that five units share one axis, keeps the
+``build_figure`` rebases the six default series to an index with
+January 2010 equal to 100 so that six units share one axis, keeps the
 nominal price and its unit in the hover text, and shades El Niño seasons
 with ``src.layers.enso_index.add_event_shading``. Price transmission is
 disputed, so the panel carries the second caption guardrail of
@@ -40,6 +40,7 @@ DEFAULT_SERIES: tuple[tuple[str, str], ...] = (
     ("COCOA", "Cocoa"),
     ("SUGAR_WLD", "Sugar, world"),
     ("RICE_05", "Rice, Thai 5%"),
+    ("PALM_OIL", "Palm oil"),
 )
 
 SOURCE_NAME = "World Bank Commodity Price Data (the Pink Sheet)"
@@ -51,9 +52,10 @@ REBASE_CAPTION = (
 )
 
 WHAT = (
-    "Monthly world prices for five agricultural commodities: arabica coffee, robusta "
-    "coffee, cocoa, sugar and rice. Each series is rebased so that January 2010 equals "
-    "100, which puts five different units on one axis; hovering over a point shows the "
+    "Monthly world prices for six agricultural commodities: arabica coffee, robusta "
+    "coffee, cocoa, sugar, rice and palm oil. Each series is rebased so that January "
+    "2010 equals 100, which puts six series with different units on one axis; hovering "
+    "over a point shows the "
     "nominal price in its own unit. Shading marks El Niño seasons as in the index panel, "
     "so that price movements can be read against the state of the event."
 )
@@ -68,7 +70,7 @@ HOW = (
 )
 
 WHY = (
-    "Coffee, cocoa, sugar and rice are grown in regions where El Niño shifts rainfall "
+    "Coffee, cocoa, sugar, rice and palm oil are grown in regions where El Niño shifts rainfall "
     "and temperature, so their world prices are among the first public series in which "
     "a realised effect on food and export earnings could appear. The panel puts the "
     "price series beside the El Niño seasons of the El Niño Southern Oscillation "
@@ -82,7 +84,8 @@ NOT_SHOWN = (
     "price move during an El Niño season therefore stands as an observation without "
     "attribution or size estimate. The series are nominal, so long-run movements "
     "include inflation, and they are world prices, distinct from what producers "
-    "received or consumers paid in any one country."
+    "received or consumers paid in any one country. The palm oil series joins several "
+    "grades and markets over time, as the Pink Sheet documentation lists."
 )
 
 

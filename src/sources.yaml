@@ -91,6 +91,9 @@ sources:
       - code: RICE_05
         name: Rice, Thai 5%
         unit: "$/mt"
+      - code: PALM_OIL
+        name: Palm oil
+        unit: "$/mt"
     redistribution: "yes"
     attribution: "The World Bank: Commodity Price Data (The Pink Sheet): World Bank Prospects Group"
     cadence: >-
