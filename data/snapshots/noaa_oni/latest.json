@@ -3,13 +3,13 @@
   "files": [
     {
       "bytes": 23050,
-      "retrieved_at": "2026-11-10T11:18:35Z",
+      "retrieved_at": "2026-11-11T11:05:06Z",
       "sha256": "118c563331335c8649cdc2677e6be7ae89d1259d901345fcddbc2857af280f7f",
       "url": "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
     },
     {
       "bytes": 14752,
-      "retrieved_at": "2026-11-10T11:18:36Z",
+      "retrieved_at": "2026-11-11T11:05:07Z",
       "sha256": "1297887f581b6190e459cbbf8bdec9a703ff65c1a229e2de4dd94285254f35c8",
       "url": "https://www.cpc.ncep.noaa.gov/data/indices/RONI.ascii.txt"
     }
@@ -19,7 +19,7 @@
   "last_date": "2026-09-01",
   "licence_id": "LicenseRef-US-PD",
   "raw_sha256": "118c563331335c8649cdc2677e6be7ae89d1259d901345fcddbc2857af280f7f",
-  "retrieved_at": "2026-11-10T11:18:35Z",
+  "retrieved_at": "2026-11-11T11:05:06Z",
   "row_count": 1842,
   "series_ids": [
     "ONI",
